@@ -65,7 +65,7 @@ def gen_lattice(basis_list):
                                 a2 = [0,1,0],
                                 a3 = [0,0,1],
                                 dimensions = 3,
-                                position =[[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+                                position = all_cords,
                                 type_name = all_types,
                                 mass = all_masses,
                                 charge = all_charges,
@@ -79,9 +79,9 @@ def gen_lattice(basis_list):
 
 n_cells = 1
 
-a = Basis(N = 1)
-b = Basis(btype = "B", N = 1)
-c = Basis(btype = "C", N = 1)
+a = Basis(N = 2)
+b = Basis(btype = "B", N = 1, diameter = 2.3)
+c = Basis(btype = "C", N = 1, mass = 1.5)
 
 
 uc = gen_lattice([a,b,c])
