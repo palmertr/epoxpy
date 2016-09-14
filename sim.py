@@ -3,7 +3,7 @@ import sys
 from hoomd import deprecated
 from hoomd import dump
 from hoomd import md
-
+import random
 import numpy as np
 
 
@@ -72,15 +72,11 @@ def gen_lattice(basis_list):
     return uc
 
 
+#TODO Right now every function and their mom makes snapshots, should be able
+# to make one and pass it arround
 
-
-def init_bonds(indexA, indexB):
-    snapshot = system.take_snapshot(bonds=True)
-    snapshot.bonds.resize(1)
-    snapshot.bonds.group[0] = [indexA, indexB]
-    snapshot.bonds.types = ['A-B']
-    snapshot.bonds.typeid[0] = 0;
-    system.restore_snapshot(snapshot)
+def init_bonds():
+    find_pair()
     harmonic = md.bond.harmonic()
     harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
 
@@ -91,13 +87,14 @@ def make_bond(indexA, indexB):
     n_bonds = snapshot.bonds.N
     snapshot.bonds.resize(n_bonds + 1)
     snapshot.bonds.group[n_bonds] = [indexA, indexB]
+    snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
     snapshot.bonds.typeid[0] = 0
     system.restore_snapshot(snapshot)
 
 
 def bond_test(kT):
     # No idea if this is thread safe, watch out for MPI gotchas
-    random.seed(a=0)
+    #random.seed(a=0)
     # Should be able to to tune rate with delta_e and kT
     delta_e = 1
     mb_stats = np.exp(-delta_e/kT)
@@ -107,7 +104,7 @@ def bond_test(kT):
         return False
 
 def get_distance(xyz0, xyz1):
-    return np.linalgnorm(np.array(xyz0)-np.array(zyz1))
+    return np.linalg.norm(np.array(xyz0)-np.array(xyz1))
 
 
 def find_pair():
@@ -120,12 +117,20 @@ def find_pair():
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
     found = False
+    print("Going into the loop")
     while found is False:
-        xyz0 = system.particles[indexA]
+        xyz0 = system.particles[indexA].position
         # Index magic, makes sure we loop over all particles
         for i in range(indexA + 1, N_p - 2):
-            xyz1 = system.particles[i % N_p]
-            r = get_distance(
+            indexB = i % N_p
+            xyz1 = system.particles[indexB].position
+            r = get_distance(xyz0, xyz1)
+            if r < CUT:
+                #bond_test
+                make_bond(indexA, indexB)
+                print("Found one, bonding {} and {}".format(indexA, indexB))
+                found = True
+                break
 
 
 
@@ -134,53 +139,93 @@ def find_pair():
 def my_callback(timestep):
     n_bonds = system.bonds.bdata.getN()
     if n_bonds == 0:
-        init_bonds(0, 1)
+        init_bonds()
+        print("first bond")
     else:
-        make_bond(n_bonds, n_bonds+1)
-        print("call back")
+        print("next bond")
+        find_pair()
 
 
+def calc_rho():
+    total_mass = 0
+    for p in system.particles:
+        total_mass += p.mass
+    return total_mass/system.box.get_volume()
+
+def calc_target_V(rho_i, rho_f, V_i):
+    return rho_i*V_i/rho_f
 
 if __name__ == "__main__":
 
-
+    # These will be in an infile somday
     hoomd.context.initialize()
-
+    CUT = 5.0
+    kT = 10.0
     n_cells = 10
-
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 1)
     #c = Basis(btype = "C", N = 5)
-
-
     uc = gen_lattice([a,b])
-
+    mix_time = 1e3
+    mix_kT = 10.0
+    rho = 1.0
+    shrink_time = 1e3
+    shrink_kT = 10.0
+    bond_time = 1e3
+    log_write = 1e2
+    dcd_write = 1e2
+    bond_period = 1e2
+    # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
-    # Better api to manipulate snapshots
-    snapshot = system.take_snapshot(bonds=True)
-    # Gives us some bonds to play with
-    #print(system.bonds)
-    #print(snapshot.bonds.N)
-    #snapshot.bonds.resize(1000)
-    #print(snapshot.bonds.N)
-    #system.restore_snapshot(snapshot)
-    #print(system.bonds)
-    #snapshot = system.take_snapshot()
-    #print(snapshot.bonds.N)
-    kT = 10.0
+
+    # Could make this dynamic by getting types first
+
+    groupA = group.type(name='a-particles', type='A')
+    groupB = group.type(name='b-particles', type='B')
+
+
+    deprecated.dump.xml(group = hoomd.group.all(), filename = "start.hoomdxml", all=True)
+    hoomd.analyze.log(filename="out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
+    dump.dcd(filename="traj.dcd", period=dcd_write, overwrite=True)
+    # Now we need a mix step
+
     nl = md.nlist.cell()
-    dpd = md.pair.dpd(r_cut=3.0, nlist=nl, kT=kT, seed=0)
+    dpd = md.pair.dpd(r_cut=3.0, nlist=nl, kT=mix_kT, seed=0)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=10.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.2)
 
-    #harmonic = md.bond.harmonic()
+    # Test to see if this will fix bondsbeing calculated
+    # Manualy bond 2 to create bonds
+    make_bond(0,1)
+    harmonic = md.bond.harmonic()
+    harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
 
 
     md.integrate.mode_standard(dt=0.02)
     md.integrate.nve(group=hoomd.group.all())
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "in.hoomdxml", all=True)
-    hoomd.analyze.callback(callback = my_callback, period = 1e2)
+    hoomd.run(mix_time)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = "mix.hoomdxml", all=True)
+
+    # Some step to get the correct density
+
+    rho_i = calc_rho()
+    V_i = system.box.get_volume()
+    start_L = V_i**(1/3)
+    target_v = calc_target_V(rho_i, rho, V_i)
+    target_L = target_v**(1/3)
+    print("Starting at {} shrinking to {}".format(start_L, target_L))
+    hoomd.update.box_resize(L = hoomd.variant.linear_interp([(0, start_L), (shrink_time, target_L)]))
+    hoomd.run(shrink_time)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = "shrink.hoomdxml", all=True)
+
+
+    # Now we bond!
+
+    bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
     hoomd.run(1e3)
+    bond_callback.disable()
     #[print(p) for p in system.particles]
     deprecated.dump.xml(group = hoomd.group.all(), filename = "out.hoomdxml", all=True)
+    hoomd.run(1e4)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = "final.hoomdxml", all=True)
