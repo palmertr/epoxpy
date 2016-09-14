@@ -74,13 +74,10 @@ def gen_lattice(basis_list):
 
 
 
-def init_bonds():
+def init_bonds(indexA, indexB):
     snapshot = system.take_snapshot(bonds=True)
-    print(snapshot.bonds.N)
     snapshot.bonds.resize(1)
-    print(snapshot.bonds.group)
-    print(snapshot.bonds.typeid)
-    snapshot.bonds.group[0] = [0,1]
+    snapshot.bonds.group[0] = [indexA, indexB]
     snapshot.bonds.types = ['A-B']
     snapshot.bonds.typeid[0] = 0;
     system.restore_snapshot(snapshot)
@@ -89,22 +86,22 @@ def init_bonds():
 
 
 
-def my_callback(timestep):
-    num_new_bonds = 1
+def make_bond(indexA, indexB):
     snapshot = system.take_snapshot(bonds=True)
     n_bonds = snapshot.bonds.N
+    snapshot.bonds.resize(n_bonds + 1)
+    snapshot.bonds.group[n_bonds] = [indexA, indexB]
+    snapshot.bonds.typeid[0] = 0
+    system.restore_snapshot(snapshot)
+
+
+
+def my_callback(timestep):
+    n_bonds = system.bonds.bdata.getN()
     if n_bonds == 0:
-        init_bonds()
+        init_bonds(0, 1)
     else:
-        snapshot.bonds.resize(n_bonds + 1)
-        snapshot.bonds.group[n_bonds] = [n_bonds, n_bonds+1]
-        snapshot.bonds.types = ['A-B']
-        snapshot.bonds.typeid[n_bonds] = 0;
-        system.restore_snapshot(snapshot)
-    #print(snapshot.bonds.N)
-    #print(snapshot.bonds.group)
-    #harmonic = md.bond.harmonic()
-    #harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
+        make_bond(n_bonds, n_bonds+1)
         print("call back")
 
 
@@ -148,7 +145,7 @@ if __name__ == "__main__":
     md.integrate.mode_standard(dt=0.02)
     md.integrate.nve(group=hoomd.group.all())
     deprecated.dump.xml(group = hoomd.group.all(), filename = "in.hoomdxml", all=True)
-    hoomd.analyze.callback(callback = my_callback, period = 5)
-    hoomd.run(20)
+    hoomd.analyze.callback(callback = my_callback, period = 1e2)
+    hoomd.run(1e3)
     #[print(p) for p in system.particles]
     deprecated.dump.xml(group = hoomd.group.all(), filename = "out.hoomdxml", all=True)
