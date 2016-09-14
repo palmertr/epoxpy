@@ -90,6 +90,7 @@ def make_bond(indexA, indexB):
     snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
     snapshot.bonds.typeid[0] = 0
     system.restore_snapshot(snapshot)
+    # TODO: dynamicly set the bond lenght
 
 
 def bond_test(kT):
@@ -113,6 +114,11 @@ def find_pair():
     N_p = snapshot.particles.N
     # Keep in mind we if N = 5, index 0..4
     indexA = random.randint(0, N_p-1)
+    typeA = system.particles[indexA].type
+    if typeA == "A":
+        group = groupB
+    else:
+        group = groupA
     # If its mixed, it shouldn't be too bad to loop till we find one even if
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
@@ -121,12 +127,12 @@ def find_pair():
     while found is False:
         xyz0 = system.particles[indexA].position
         # Index magic, makes sure we loop over all particles
-        for i in range(indexA + 1, N_p - 2):
-            indexB = i % N_p
-            xyz1 = system.particles[indexB].position
+        for p in group:
+            xyz1 = p.position
             r = get_distance(xyz0, xyz1)
             if r < CUT:
                 #bond_test
+                indexB = p.tag
                 make_bond(indexA, indexB)
                 print("Found one, bonding {} and {}".format(indexA, indexB))
                 found = True
@@ -175,13 +181,15 @@ if __name__ == "__main__":
     log_write = 1e2
     dcd_write = 1e2
     bond_period = 1e2
+    bond_time = 1e3
+    final_run_time = 1e4
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
     # Could make this dynamic by getting types first
 
-    groupA = group.type(name='a-particles', type='A')
-    groupB = group.type(name='b-particles', type='B')
+    groupA = hoomd.group.type(name='a-particles', type='A')
+    groupB = hoomd.group.type(name='b-particles', type='B')
 
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = "start.hoomdxml", all=True)
@@ -197,6 +205,7 @@ if __name__ == "__main__":
 
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
+    # TODO fix this hack
     make_bond(0,1)
     harmonic = md.bond.harmonic()
     harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
@@ -222,10 +231,9 @@ if __name__ == "__main__":
 
     # Now we bond!
 
-    bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
-    hoomd.run(1e3)
-    bond_callback.disable()
-    #[print(p) for p in system.particles]
+    #bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
+    hoomd.run(bond_time)
+    #bond_callback.disable()
     deprecated.dump.xml(group = hoomd.group.all(), filename = "out.hoomdxml", all=True)
-    hoomd.run(1e4)
+    hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = "final.hoomdxml", all=True)
