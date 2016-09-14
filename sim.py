@@ -95,6 +95,41 @@ def make_bond(indexA, indexB):
     system.restore_snapshot(snapshot)
 
 
+def bond_test(kT):
+    # No idea if this is thread safe, watch out for MPI gotchas
+    random.seed(a=0)
+    # Should be able to to tune rate with delta_e and kT
+    delta_e = 1
+    mb_stats = np.exp(-delta_e/kT)
+    if mb_stats > random.random():
+        return True
+    else:
+        return False
+
+def get_distance(xyz0, xyz1):
+    return np.linalgnorm(np.array(xyz0)-np.array(zyz1))
+
+
+def find_pair():
+    # Until I can hack a way to get access to the neighborlist
+    snapshot = system.take_snapshot()
+    N_p = snapshot.particles.N
+    # Keep in mind we if N = 5, index 0..4
+    indexA = random.randint(0, N_p-1)
+    # If its mixed, it shouldn't be too bad to loop till we find one even if
+    # we always start loop from indexA to indexA+1 % N_p
+    # also this could be an info loop, yolo!
+    found = False
+    while found is False:
+        xyz0 = system.particles[indexA]
+        # Index magic, makes sure we loop over all particles
+        for i in range(indexA + 1, N_p - 2):
+            xyz1 = system.particles[i % N_p]
+            r = get_distance(
+
+
+
+
 
 def my_callback(timestep):
     n_bonds = system.bonds.bdata.getN()
