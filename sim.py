@@ -181,8 +181,9 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     run_dir = "/runs/"
     run_name_postfix = sys.argv[1]
-    run_name = "test/"#{}/".format(run_name_postfix)
+    run_name = "test{}/".format(run_name_postfix)
     run_dir += run_name
+    print("about to make dir")
     init_run_dir(run_dir)
     print(run_dir)
     # Move run files to dir

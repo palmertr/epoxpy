@@ -22,8 +22,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # This next line is not used yet
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 12 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py --gpu=0 > job_a.o &\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py --gpu=1 > job_b.o &\n"
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py A --gpu=0 > job_a.o &\n"
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py B --gpu=1 > job_b.o &\n"
     job_string +="wait"
     return job_string
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     job_time = "1:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
 
-    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim")
+    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim")
     write_job_string(job_string)
     cmd = "sbatch submit.sh"
     sp.call(cmd, shell=True)
