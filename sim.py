@@ -1,10 +1,13 @@
-import hoomd
+import os
 import sys
+import random
+import shutil
+import subprocess as sp
+import numpy as np
+import hoomd
 from hoomd import deprecated
 from hoomd import dump
 from hoomd import md
-import random
-import numpy as np
 
 
 class Basis:
@@ -161,10 +164,22 @@ def calc_rho():
 def calc_target_V(rho_i, rho_f, V_i):
     return rho_i*V_i/rho_f
 
-if __name__ == "__main__":
+def init_run_dir(run_dir):
+    cwd = os.getcwd()
+    os.makedirs(run_dir,exist_ok=True)
 
+if __name__ == "__main__":
     # These will be in an infile somday
     hoomd.context.initialize()
+    run_dir = "runs/"
+    run_name = "test/"
+    run_dir += run_name
+    init_run_dir(run_dir)
+    #print(run_dir)
+    # Move run files to dir
+    shutil.move("submit.sh", run_dir)
+    shutil.copy("sim.py", run_dir)
+    # run vars below
     CUT = 5.0
     kT = 10.0
     n_cells = 10
@@ -182,7 +197,7 @@ if __name__ == "__main__":
     dcd_write = 1e2
     bond_period = 1e2
     bond_time = 1e3
-    final_run_time = 1e4
+    final_run_time = 1e1
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
@@ -193,8 +208,8 @@ if __name__ == "__main__":
 
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = "start.hoomdxml", all=True)
-    hoomd.analyze.log(filename="out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
-    dump.dcd(filename="traj.dcd", period=dcd_write, overwrite=True)
+    hoomd.analyze.log(filename= run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
+    dump.dcd(filename=run_dir +"traj.dcd", period=dcd_write, overwrite=True)
     # Now we need a mix step
 
     nl = md.nlist.cell()
@@ -214,7 +229,7 @@ if __name__ == "__main__":
     md.integrate.mode_standard(dt=0.02)
     md.integrate.nve(group=hoomd.group.all())
     hoomd.run(mix_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "mix.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"mix.hoomdxml", all=True)
 
     # Some step to get the correct density
 
@@ -226,7 +241,7 @@ if __name__ == "__main__":
     print("Starting at {} shrinking to {}".format(start_L, target_L))
     hoomd.update.box_resize(L = hoomd.variant.linear_interp([(0, start_L), (shrink_time, target_L)]))
     hoomd.run(shrink_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "shrink.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"shrink.hoomdxml", all=True)
 
 
     # Now we bond!
@@ -234,6 +249,6 @@ if __name__ == "__main__":
     #bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
     hoomd.run(bond_time)
     #bond_callback.disable()
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "out.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename =run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "final.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"final.hoomdxml", all=True)
