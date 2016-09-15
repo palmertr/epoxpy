@@ -171,10 +171,13 @@ def init_run_dir(run_dir):
     if os.path.isfile(cwd+ run_dir):
         print("it exists")
         yield
-    else:     
+    else:
         os.makedirs(cwd + run_dir)
         print("made")
         print(cwd + run_dir)
+def foo():
+    print("bar")
+
 
 if __name__ == "__main__":
     # These will be in an infile somday
@@ -183,8 +186,10 @@ if __name__ == "__main__":
     run_name_postfix = sys.argv[1]
     run_name = "test{}/".format(run_name_postfix)
     run_dir += run_name
-    print("about to make dir")
+    print("about to make dir function step")
+    foo()
     init_run_dir(run_dir)
+    foo()
     print(run_dir)
     # Move run files to dir
     shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
