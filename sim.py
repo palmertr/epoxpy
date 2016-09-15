@@ -166,24 +166,31 @@ def calc_target_V(rho_i, rho_f, V_i):
     return rho_i*V_i/rho_f
 
 def init_run_dir(run_dir):
+    print("making dir..")
     cwd = os.getcwd()
-    if os.path.isfile(run_dir):
+    if os.path.isfile(cwd+ run_dir):
+        print("it exists")
         yield
     else:     
-        os.makedirs(run_dir)
+        os.makedirs(cwd + run_dir)
+        print("made")
+        print(cwd + run_dir)
 
 if __name__ == "__main__":
     # These will be in an infile somday
-    hoomd.context.initialize()
-    run_dir = "runs/"
-    run_name = "test/"
+    cwd = os.getcwd()
+    run_dir = "/runs/"
+    run_name_postfix = sys.argv[1]
+    run_name = "test/"#{}/".format(run_name_postfix)
     run_dir += run_name
     init_run_dir(run_dir)
-    #print(run_dir)
+    print(run_dir)
     # Move run files to dir
-    shutil.copy("submit.sh", run_dir)
-    shutil.copy("sim.py", run_dir)
+    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
+    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
     # run vars below
+    
+    hoomd.context.initialize()
     CUT = 5.0
     kT = 10.0
     n_cells = 10
