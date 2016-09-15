@@ -41,4 +41,4 @@ if __name__ == "__main__":
     job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim")
     write_job_string(job_string)
     cmd = "sbatch submit.sh"
-    sp.run(cmd, shell=True)
+    sp.call(cmd, shell=True)

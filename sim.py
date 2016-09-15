@@ -166,7 +166,10 @@ def calc_target_V(rho_i, rho_f, V_i):
 
 def init_run_dir(run_dir):
     cwd = os.getcwd()
-    os.makedirs(run_dir,exist_ok=True)
+    if os.path.isfile(run_dir):
+        yield
+    else:     
+        os.makedirs(run_dir)
 
 if __name__ == "__main__":
     # These will be in an infile somday
@@ -177,7 +180,7 @@ if __name__ == "__main__":
     init_run_dir(run_dir)
     #print(run_dir)
     # Move run files to dir
-    shutil.move("submit.sh", run_dir)
+    shutil.copy("submit.sh", run_dir)
     shutil.copy("sim.py", run_dir)
     # run vars below
     CUT = 5.0
@@ -252,3 +255,7 @@ if __name__ == "__main__":
     deprecated.dump.xml(group = hoomd.group.all(), filename =run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"final.hoomdxml", all=True)
+    # Clean up now
+    shutil.copy("job.o", run_dir)
+    shutil.copy("job_a.o", run_dir)
+    shutil.copy("job_b.o", run_dir)
