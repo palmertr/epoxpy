@@ -1,0 +1,4 @@
+*.sh
+runs/
+*.hoomdxml
+*.dcd

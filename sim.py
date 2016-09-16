@@ -168,13 +168,16 @@ def calc_target_V(rho_i, rho_f, V_i):
 def init_run_dir(run_dir):
     print("making dir..")
     cwd = os.getcwd()
-    if os.path.isfile(cwd+ run_dir):
+    if os.path.isdir(cwd+ run_dir):
         print("it exists")
-        yield
+        #yield
     else:
+        print(cwd + run_dir)
+        print(os.path.isfile(cwd+ run_dir))
         os.makedirs(cwd + run_dir)
         print("made")
         print(cwd + run_dir)
+
 def foo():
     print("bar")
 
@@ -182,7 +185,7 @@ def foo():
 if __name__ == "__main__":
     # These will be in an infile somday
     cwd = os.getcwd()
-    run_dir = "/runs/"
+    run_dir = "runs/"
     run_name_postfix = sys.argv[1]
     run_name = "test{}/".format(run_name_postfix)
     run_dir += run_name
