@@ -1,9 +1,11 @@
 import os
+import sys
 import subprocess as sp
 
 def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # sim_dir needs to be the dir sim.py is in
     job_string = "#!/bin/bash -l\n"
+    job_string +="#SBATCH -A quick\n".format(queue)   
     job_string +="#SBATCH -p {}\n".format(queue)
     job_string +="#SBATCH -J {}\n".format(job_name)
     job_string +="#SBATCH -o job.o\n"
@@ -22,9 +24,10 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # This next line is not used yet
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 12 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py A --gpu=0 > job_a.o &\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py B --gpu=1 > job_b.o &\n"
-    job_string +="wait"
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py {} --gpu=0 > job_{}.o &\n".format(sys.argv[1], sys.argv[1])
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py {} --gpu=1 > job_{}.o &\n".format(sys.argv[2], sys.argv[2])
+    job_string +="wait\n"
+    job_string +="echo 'all done!'"
     return job_string
 
 

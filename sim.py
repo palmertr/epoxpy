@@ -168,10 +168,7 @@ def calc_target_V(rho_i, rho_f, V_i):
 def init_run_dir(run_dir):
     print("making dir..")
     cwd = os.getcwd()
-    if os.path.isdir(cwd+ run_dir):
-        print("it exists")
-        #yield
-    else:
+    if os.path.isdir(cwd+ run_dir) is not True:
         print(cwd + run_dir)
         print(os.path.isfile(cwd+ run_dir))
         os.makedirs(cwd + run_dir)
@@ -185,7 +182,8 @@ def foo():
 if __name__ == "__main__":
     # These will be in an infile somday
     cwd = os.getcwd()
-    run_dir = "runs/"
+    run_dir = "/runs/"
+    # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
     run_name = "test{}/".format(run_name_postfix)
     run_dir += run_name
@@ -194,30 +192,30 @@ if __name__ == "__main__":
     init_run_dir(run_dir)
     foo()
     print(run_dir)
-    # Move run files to dir
-    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
-    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
+
     # run vars below
     
     hoomd.context.initialize()
     CUT = 5.0
-    kT = 10.0
+    kT = float(run_name_postfix)
     n_cells = 10
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 1)
     #c = Basis(btype = "C", N = 5)
     uc = gen_lattice([a,b])
-    mix_time = 1e3
+    mix_time = 1e4
     mix_kT = 10.0
     rho = 1.0
-    shrink_time = 1e3
+    shrink_time = 1e4
     shrink_kT = 10.0
     bond_time = 1e3
+    bond_kT = 10.0
     log_write = 1e2
     dcd_write = 1e2
     bond_period = 1e2
     bond_time = 1e3
     final_run_time = 1e1
+    run_kT = kT 
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
@@ -226,10 +224,10 @@ if __name__ == "__main__":
     groupA = hoomd.group.type(name='a-particles', type='A')
     groupB = hoomd.group.type(name='b-particles', type='B')
 
-
-    deprecated.dump.xml(group = hoomd.group.all(), filename = "start.hoomdxml", all=True)
-    hoomd.analyze.log(filename= run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
-    dump.dcd(filename=run_dir +"traj.dcd", period=dcd_write, overwrite=True)
+    print(cwd + run_dir + "start.hoomdxml")
+    deprecated.dump.xml(group = hoomd.group.all(), filename =cwd + run_dir + "start.hoomdxml", all=True)
+    hoomd.analyze.log(filename= cwd + run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
+    dump.dcd(filename=cwd + run_dir +"traj.dcd", period=dcd_write, overwrite=True)
     # Now we need a mix step
 
     nl = md.nlist.cell()
@@ -249,10 +247,10 @@ if __name__ == "__main__":
     md.integrate.mode_standard(dt=0.02)
     md.integrate.nve(group=hoomd.group.all())
     hoomd.run(mix_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"mix.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
     # Some step to get the correct density
-
+    dpd.set_params(kT = shrink_kT)
     rho_i = calc_rho()
     V_i = system.box.get_volume()
     start_L = V_i**(1/3)
@@ -261,18 +259,25 @@ if __name__ == "__main__":
     print("Starting at {} shrinking to {}".format(start_L, target_L))
     hoomd.update.box_resize(L = hoomd.variant.linear_interp([(0, start_L), (shrink_time, target_L)]))
     hoomd.run(shrink_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"shrink.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"shrink.hoomdxml", all=True)
 
 
     # Now we bond!
-
-    #bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
+    dpd.set_params(kT = bond_kT)
+    bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
     hoomd.run(bond_time)
-    #bond_callback.disable()
-    deprecated.dump.xml(group = hoomd.group.all(), filename =run_dir + "bond.hoomdxml", all=True)
+    # Now we run to eql
+    bond_callback.disable()
+    dpd.set_params(kT = run_kT)
+    deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = run_dir +"final.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     # Clean up now
-    shutil.copy("job.o", run_dir)
-    shutil.copy("job_a.o", run_dir)
-    shutil.copy("job_b.o", run_dir)
+    # Move run files to dir
+    # I think should be done in bash, then no race conditions
+    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
+    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
+    shutil.copy(cwd + "/job.o", cwd + run_dir + "job.o")
+    print(cwd + "/job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    shutil.copy(cwd + "/job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    print("clean sim.py exit")
