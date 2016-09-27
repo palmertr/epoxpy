@@ -185,7 +185,7 @@ if __name__ == "__main__":
     run_dir = "/runs/"
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
-    run_name = "dpd_coefs{}/".format(run_name_postfix)
+    run_name = "v_debug{}/".format(run_name_postfix)
     run_dir += run_name
     print("about to make dir function step")
     foo()
@@ -203,18 +203,18 @@ if __name__ == "__main__":
     b = Basis(btype = "B", N = 1)
     #c = Basis(btype = "C", N = 5)
     uc = gen_lattice([a,b])
-    mix_time = 1e4
+    mix_time = 1e1
     mix_kT = 10.0
     rho = 1.0
-    shrink_time = 1e4
+    shrink_time = 1e1
     shrink_kT = 10.0
-    bond_time = 1e3
+    bond_time = 1e1
     bond_kT = 10.0
     log_write = 1e2
     dcd_write = 1e2
     bond_period = 1e2
-    bond_time = 1e3
-    final_run_time = 1e6
+    bond_time = 1e1
+    final_run_time = 1e1
     run_kT = kT 
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     # Now we need a mix step
 
     nl = md.nlist.cell()
-    dpd = md.pair.dpd(r_cut=3.0, nlist=nl, kT=mix_kT, seed=0)
+    dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=mix_kT, seed=0)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=5.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.2)
