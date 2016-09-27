@@ -185,7 +185,7 @@ if __name__ == "__main__":
     run_dir = "/runs/"
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
-    run_name = "test{}/".format(run_name_postfix)
+    run_name = "dpd_coefs{}/".format(run_name_postfix)
     run_dir += run_name
     print("about to make dir function step")
     foo()
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     hoomd.context.initialize()
     CUT = 5.0
     kT = float(run_name_postfix)
-    n_cells = 10
+    n_cells = 30 # 2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 1)
     #c = Basis(btype = "C", N = 5)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     dcd_write = 1e2
     bond_period = 1e2
     bond_time = 1e3
-    final_run_time = 1e1
+    final_run_time = 1e6
     run_kT = kT 
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
     nl = md.nlist.cell()
     dpd = md.pair.dpd(r_cut=3.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=10.0, gamma = 1.2)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=5.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.2)
     dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.2)
 
@@ -264,10 +264,12 @@ if __name__ == "__main__":
 
     # Now we bond!
     dpd.set_params(kT = bond_kT)
-    bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
+    # No bonding for now
+    #bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
     hoomd.run(bond_time)
     # Now we run to eql
-    bond_callback.disable()
+    # Can't disable something we don't define
+    #bond_callback.disable()
     dpd.set_params(kT = run_kT)
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)

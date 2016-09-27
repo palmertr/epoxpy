@@ -38,10 +38,10 @@ def write_job_string(job_string):
 
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
-    job_time = "1:00:00"
+    job_time = "6:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
 
-    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim")
+    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim")
     write_job_string(job_string)
     cmd = "sbatch submit.sh"
     sp.call(cmd, shell=True)
