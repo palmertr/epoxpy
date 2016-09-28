@@ -5,10 +5,10 @@ import subprocess as sp
 def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # sim_dir needs to be the dir sim.py is in
     job_string = "#!/bin/bash -l\n"
-    job_string +="#SBATCH -A quick\n".format(queue)   
+    job_string +="#SBATCH -A quick\n"   
     job_string +="#SBATCH -p {}\n".format(queue)
     job_string +="#SBATCH -J {}\n".format(job_name)
-    job_string +="#SBATCH -o job.o\n"
+    job_string +="#SBATCH -o bp90job.o\n"
     job_string +="#SBATCH -N 1\n"
     job_string +="#SBATCH -n 16\n"
     job_string +="#SBATCH --mail-type=All\n"
@@ -24,8 +24,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # This next line is not used yet
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 12 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py {} --gpu=0 > job_{}.o &\n".format(sys.argv[1], sys.argv[1])
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py {} --gpu=1 > job_{}.o &\n".format(sys.argv[2], sys.argv[2])
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py {} --gpu=0 > bp90job_{}.o &\n".format(sys.argv[1], sys.argv[1])
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py {} --gpu=1 > bp90job_{}.o &\n".format(sys.argv[2], sys.argv[2])
     job_string +="wait\n"
     job_string +="echo 'all done!'"
     return job_string
@@ -38,10 +38,10 @@ def write_job_string(job_string):
 
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
-    job_time = "6:00:00"
+    job_time = "2:30:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
 
-    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim")
+    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim")
     write_job_string(job_string)
     cmd = "sbatch submit.sh"
     sp.call(cmd, shell=True)

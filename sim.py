@@ -36,8 +36,11 @@ class Basis:
             }
             self.cords.append(type_dic[self.btype])
 
+    def get_basis_mass(self):
+        return self.mass*self.N
 
-def gen_lattice(basis_list):
+
+def gen_lattice(basis_list, rho):
     R""" Wraper function for hoomd.lattice.unitcell
 
     Args:
@@ -52,6 +55,7 @@ def gen_lattice(basis_list):
     all_masses = []
     all_charges = []
     all_diameters = []
+    total_mass = 0
     N = 0
 
     for basis in basis_list:
@@ -61,11 +65,19 @@ def gen_lattice(basis_list):
         all_charges += [basis.charge]*basis.N
         all_diameters += [basis.diameter]*basis.N
         N += basis.N
+        total_mass += basis.get_basis_mass()
+
+    # volume calc
+
+    V = total_mass/rho
+    print("total mass is {}".format(total_mass))
+
+    L = V**(1/3)
 
     uc = hoomd.lattice.unitcell(N = N,
-                                a1 = [1, 0, 0],
-                                a2 = [0, 1, 0],
-                                a3 = [0, 0, 1],
+                                a1 = [L, 0, 0],
+                                a2 = [0, L, 0],
+                                a3 = [0, 0, L],
                                 dimensions = 3,
                                 position = all_cords,
                                 type_name = all_types,
@@ -112,7 +124,7 @@ def get_distance(xyz0, xyz1):
     return np.linalg.norm(np.array(xyz0)-np.array(xyz1))
 
 
-def find_pair():
+def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
     snapshot = system.take_snapshot()
     N_p = snapshot.particles.N
@@ -128,19 +140,20 @@ def find_pair():
     # also this could be an info loop, yolo!
     found = False
     print("Going into the loop")
-    while found is False:
-        xyz0 = system.particles[indexA].position
-        # Index magic, makes sure we loop over all particles
-        for p in group:
-            xyz1 = p.position
-            r = get_distance(xyz0, xyz1)
-            if r < CUT:
-                #bond_test
-                indexB = p.tag
-                make_bond(indexA, indexB)
-                print("Found one, bonding {} and {}".format(indexA, indexB))
-                found = True
-                break
+    xyz0 = system.particles[indexA].position
+    # Index magic, makes sure we loop over all particles
+    for p in group:
+        xyz1 = p.position
+        # Ugh, need to account for PBC
+        r = get_distance(xyz0, xyz1)
+        if r < CUT:
+            #bond_test
+            indexB = p.tag
+            make_bond(indexA, indexB)
+            print("Found one, bonding {} and {}".format(indexA, indexB))
+            found = True
+            break
+    print("could not find a match :(")
 
 
 
@@ -156,7 +169,7 @@ def my_callback(timestep):
         find_pair()
 
 
-def calc_rho():
+def get_system_mass():
     total_mass = 0
     for p in system.particles:
         total_mass += p.mass
@@ -175,8 +188,6 @@ def init_run_dir(run_dir):
         print("made")
         print(cwd + run_dir)
 
-def foo():
-    print("bar")
 
 
 if __name__ == "__main__":
@@ -185,37 +196,35 @@ if __name__ == "__main__":
     run_dir = "/runs/"
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
-    run_name = "v_debug{}/".format(run_name_postfix)
+    run_name = "dpdc_debug_bonding_p90_{}/".format(run_name_postfix)
     run_dir += run_name
-    print("about to make dir function step")
-    foo()
     init_run_dir(run_dir)
-    foo()
+    print(run_name_postfix)
     print(run_dir)
 
     # run vars below
-    
+
     hoomd.context.initialize()
-    CUT = 5.0
+    CUT = 2.0
     kT = float(run_name_postfix)
-    n_cells = 30 # 2*30^3 = 54k
+    n_cells = 18 # 2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 1)
     #c = Basis(btype = "C", N = 5)
-    uc = gen_lattice([a,b])
+    rho = 1.0 #float(run_name_postfix)
+    uc = gen_lattice([a,b], rho)
     mix_time = 1e1
     mix_kT = 10.0
-    rho = 1.0
     shrink_time = 1e1
     shrink_kT = 10.0
     bond_time = 1e1
-    bond_kT = 10.0
-    log_write = 1e2
-    dcd_write = 1e2
+    bond_kT = kT
+    log_write = 1e4
+    dcd_write = 1e4
     bond_period = 1e2
-    bond_time = 1e1
-    final_run_time = 1e1
-    run_kT = kT 
+    bond_time = 9e5
+    final_run_time = 1e6
+    run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
@@ -231,45 +240,40 @@ if __name__ == "__main__":
     # Now we need a mix step
 
     nl = md.nlist.cell()
-    dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=5.0, gamma = 1.2)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.2)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.2)
+    dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 10)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 10)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 10)
 
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
     # TODO fix this hack
     make_bond(0,1)
     harmonic = md.bond.harmonic()
-    harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
+    harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
 
 
     md.integrate.mode_standard(dt=0.02)
     md.integrate.nve(group=hoomd.group.all())
+    # For the mix we will set r_cut to be larger, this lets all of our
+    # particles mix
     hoomd.run(mix_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
+    # Set r_cut back to what it should be
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=100.0, gamma = 1, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=100.0, gamma = 1, r_cut = 1.0)
 
-    # Some step to get the correct density
-    dpd.set_params(kT = shrink_kT)
-    rho_i = calc_rho()
-    V_i = system.box.get_volume()
-    start_L = V_i**(1/3)
-    target_v = calc_target_V(rho_i, rho, V_i)
-    target_L = target_v**(1/3)
-    print("Starting at {} shrinking to {}".format(start_L, target_L))
-    hoomd.update.box_resize(L = hoomd.variant.linear_interp([(0, start_L), (shrink_time, target_L)]))
-    hoomd.run(shrink_time)
-    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"shrink.hoomdxml", all=True)
+    deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
 
     # Now we bond!
     dpd.set_params(kT = bond_kT)
     # No bonding for now
-    #bond_callback = hoomd.analyze.callback(callback = my_callback, period = bond_period)
+    bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
     hoomd.run(bond_time)
     # Now we run to eql
     # Can't disable something we don't define
-    #bond_callback.disable()
+    bond_callback.disable()
     dpd.set_params(kT = run_kT)
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
@@ -279,7 +283,7 @@ if __name__ == "__main__":
     # I think should be done in bash, then no race conditions
     shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
     shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
-    shutil.copy(cwd + "/job.o", cwd + run_dir + "job.o")
-    print(cwd + "/job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
-    shutil.copy(cwd + "/job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    shutil.copy(cwd + "/bp90job.o", cwd + run_dir + "job.o")
+    print(cwd + "/bp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    shutil.copy(cwd + "/bp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
     print("clean sim.py exit")
