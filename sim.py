@@ -196,7 +196,7 @@ if __name__ == "__main__":
     run_dir = "/runs/"
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
-    run_name = "dpdc_debug_bonding_p90_{}/".format(run_name_postfix)
+    run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
     run_dir += run_name
     init_run_dir(run_dir)
     print(run_name_postfix)
@@ -213,16 +213,15 @@ if __name__ == "__main__":
     #c = Basis(btype = "C", N = 5)
     rho = 1.0 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
-    mix_time = 1e1
+    mix_time = 1e4
     mix_kT = 10.0
     shrink_time = 1e1
     shrink_kT = 10.0
-    bond_time = 1e1
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e2
-    bond_time = 9e5
+    bond_time = 1e5
     final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
@@ -241,9 +240,9 @@ if __name__ == "__main__":
 
     nl = md.nlist.cell()
     dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 10)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 10)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 10)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1)
 
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
@@ -259,9 +258,9 @@ if __name__ == "__main__":
     # particles mix
     hoomd.run(mix_time)
     # Set r_cut back to what it should be
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=100.0, gamma = 1, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=100.0, gamma = 1, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 0.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=100.0, gamma = 0.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=100.0, gamma = 0.0, r_cut = 1.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
@@ -283,7 +282,7 @@ if __name__ == "__main__":
     # I think should be done in bash, then no race conditions
     shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
     shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
-    shutil.copy(cwd + "/bp90job.o", cwd + run_dir + "job.o")
-    print(cwd + "/bp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
-    shutil.copy(cwd + "/bp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    shutil.copy(cwd + "/gbp90job.o", cwd + run_dir + "job.o")
+    print(cwd + "/gbp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+    shutil.copy(cwd + "/gbp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
     print("clean sim.py exit")
