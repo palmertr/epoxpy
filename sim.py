@@ -205,6 +205,7 @@ if __name__ == "__main__":
     # run vars below
 
     hoomd.context.initialize()
+    BOND = False
     CUT = 2.0
     kT = float(run_name_postfix)
     n_cells = 18 # 2*30^3 = 54k
@@ -266,13 +267,13 @@ if __name__ == "__main__":
 
 
     # Now we bond!
-    dpd.set_params(kT = bond_kT)
     # No bonding for now
-    bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
-    hoomd.run(bond_time)
+    if BOND is True:
+        dpd.set_params(kT = bond_kT)
+        bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
+        hoomd.run(bond_time)
+        bond_callback.disable()
     # Now we run to eql
-    # Can't disable something we don't define
-    bond_callback.disable()
     dpd.set_params(kT = run_kT)
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
