@@ -124,6 +124,14 @@ def get_distance(xyz0, xyz1):
     return np.linalg.norm(np.array(xyz0)-np.array(xyz1))
 
 
+def get_bond_rank(index):
+    rank = 0
+    for bond in snapshot.bonds.group:
+        if bond[0] == index or bond[1] == index:
+            rank += 1
+    return rank
+
+
 def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
     snapshot = system.take_snapshot()
@@ -133,8 +141,23 @@ def find_pair(timestep):
     typeA = system.particles[indexA].type
     if typeA == "A":
         group = groupB
+        typeB = "B"
+        MAX_RANK_B = MAX_B_BONDS
     else:
         group = groupA
+        typeB = "A"
+        MAX_RANK_B = MAX_A_BONDS
+    # Check to see if it can make more bonds
+
+    rank = get_bond_rank(indexA)
+
+    if typeA == "A" and rank > MAX_A_BONDS:
+        print("Can't bond it anymore")
+        return False
+    elif typeA == "B" and rank > MAX_B_BONDS:
+        print("Can't bond it anymore")
+        return False
+
     # If its mixed, it shouldn't be too bad to loop till we find one even if
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
@@ -146,14 +169,13 @@ def find_pair(timestep):
         xyz1 = p.position
         # Ugh, need to account for PBC
         r = get_distance(xyz0, xyz1)
-        if r < CUT:
+        if r < CUT and get_bond_rank(p.tag) <= MAX_B_BONDS:
             #bond_test
             indexB = p.tag
             make_bond(indexA, indexB)
             print("Found one, bonding {} and {}".format(indexA, indexB))
             found = True
             break
-    print("could not find a match :(")
 
 
 
@@ -204,13 +226,16 @@ if __name__ == "__main__":
 
     # run vars below
 
+    MAX_A_BONDS = 4
+    MAX_B_BONDS = 2
+
     hoomd.context.initialize()
     BOND = False
     CUT = 2.0
     kT = float(run_name_postfix)
     n_cells = 18 # 2*30^3 = 54k
     a = Basis(N = 1)
-    b = Basis(btype = "B", N = 1)
+    b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
     rho = 1.0 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
@@ -222,7 +247,7 @@ if __name__ == "__main__":
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e2
-    bond_time = 1e5
+    bond_time = 9e5
     final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
@@ -253,15 +278,15 @@ if __name__ == "__main__":
     harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
 
 
-    md.integrate.mode_standard(dt=0.02)
+    md.integrate.mode_standard(dt=2e-2)
     md.integrate.nve(group=hoomd.group.all())
     # For the mix we will set r_cut to be larger, this lets all of our
     # particles mix
     hoomd.run(mix_time)
     # Set r_cut back to what it should be
     dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 0.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=100.0, gamma = 0.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=100.0, gamma = 0.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 0.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 0.0, r_cut = 1.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
