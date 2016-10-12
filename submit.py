@@ -5,7 +5,9 @@ import subprocess as sp
 def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     # sim_dir needs to be the dir sim.py is in
     job_string = "#!/bin/bash -l\n"
-    #job_string +="#SBATCH -A quick\n"   
+    if queue == "quick":
+        job_string +="#SBATCH -A quick\n"
+        job_time = "2:30:00"
     job_string +="#SBATCH -p {}\n".format(queue)
     job_string +="#SBATCH -J {}\n".format(job_name)
     job_string +="#SBATCH -o gbp10job.o\n"
@@ -19,7 +21,7 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"):
     job_string +="\n"
     job_string +="module purge\n"
     job_string +="module use /scratch/erjank_project/mike_modules/modulefiles/\n"
-    job_string +="module load hoomd/0e1d572 slurm\n"
+    job_string +="module load hoomd/2.1.0 slurm\n"
     job_string +="cd {}\n".format(sim_dir)
     # This next line is not used yet
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 12 * 3600 - 10 * 60))\n"
@@ -41,7 +43,7 @@ if __name__ == "__main__":
     job_time = "6:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
 
-    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim")
+    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim")
     write_job_string(job_string)
     cmd = "sbatch submit.sh"
     sp.call(cmd, shell=True)

@@ -126,6 +126,7 @@ def get_distance(xyz0, xyz1):
 
 def get_bond_rank(index):
     rank = 0
+    snapshot = system.take_snapshot(bonds=True)
     for bond in snapshot.bonds.group:
         if bond[0] == index or bond[1] == index:
             rank += 1
@@ -151,10 +152,10 @@ def find_pair(timestep):
 
     rank = get_bond_rank(indexA)
 
-    if typeA == "A" and rank > MAX_A_BONDS:
+    if typeA == "A" and rank == MAX_A_BONDS:
         print("Can't bond it anymore")
         return False
-    elif typeA == "B" and rank > MAX_B_BONDS:
+    elif typeA == "B" and rank == MAX_B_BONDS:
         print("Can't bond it anymore")
         return False
 
@@ -162,20 +163,24 @@ def find_pair(timestep):
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
     found = False
-    print("Going into the loop")
+    #print("Going into the loop")
     xyz0 = system.particles[indexA].position
     # Index magic, makes sure we loop over all particles
     for p in group:
         xyz1 = p.position
         # Ugh, need to account for PBC
         r = get_distance(xyz0, xyz1)
-        if r < CUT and get_bond_rank(p.tag) <= MAX_B_BONDS:
-            #bond_test
-            indexB = p.tag
-            make_bond(indexA, indexB)
-            print("Found one, bonding {} and {}".format(indexA, indexB))
-            found = True
-            break
+        if r < CUT:
+            bond_rank = get_bond_rank(p.tag)
+            if bond_rank < MAX_B_BONDS:
+                #bond_test
+                indexB = p.tag
+                make_bond(indexA, indexB)
+                #print("Found one, bonding {} and {}".format(indexA, indexB))
+                found = True
+                print("Rank of A {} type of A {}".format(rank, typeA))
+                print("Rank of B {} type of B {}".format(get_bond_rank(p.tag), typeB))
+                return True
 
 
 
@@ -188,7 +193,10 @@ def my_callback(timestep):
         print("first bond")
     else:
         print("next bond")
-        find_pair()
+        if find_pair() is True:
+            print("bonded")
+        else:
+            print("could not bond")
 
 
 def get_system_mass():
@@ -230,25 +238,25 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND = False
+    BOND =True
     CUT = 2.0
     kT = float(run_name_postfix)
-    n_cells = 18 # 2*30^3 = 54k
+    n_cells = 5 # 2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
     rho = 1.0 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
-    mix_time = 1e4
+    mix_time = 1e3
     mix_kT = 10.0
     shrink_time = 1e1
     shrink_kT = 10.0
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
-    bond_period = 1e2
-    bond_time = 9e5
-    final_run_time = 1e6
+    bond_period = 1e1
+    bond_time = 5e3
+    final_run_time = 1e1
     run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -266,9 +274,9 @@ if __name__ == "__main__":
 
     nl = md.nlist.cell()
     dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0)
 
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
@@ -284,9 +292,9 @@ if __name__ == "__main__":
     # particles mix
     hoomd.run(mix_time)
     # Set r_cut back to what it should be
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 0.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 0.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 0.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 1.0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0, r_cut = 1.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
