@@ -178,8 +178,8 @@ def find_pair(timestep):
                 make_bond(indexA, indexB)
                 #print("Found one, bonding {} and {}".format(indexA, indexB))
                 found = True
-                print("Rank of A {} type of A {}".format(rank, typeA))
-                print("Rank of B {} type of B {}".format(get_bond_rank(p.tag), typeB))
+                #print("Rank of A {} type of A {}".format(rank, typeA))
+                #print("Rank of B {} type of B {}".format(get_bond_rank(p.tag), typeB))
                 return True
 
 
@@ -223,12 +223,14 @@ def init_run_dir(run_dir):
 if __name__ == "__main__":
     # These will be in an infile somday
     cwd = os.getcwd()
-    run_dir = "/runs/"
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
-    run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
-    run_dir += run_name
+    run_name = sys.argv[2]
+    #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
+    run_dir = "/"+run_name
     init_run_dir(run_dir)
+    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
+    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
     print(run_name_postfix)
     print(run_dir)
 
@@ -238,25 +240,23 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND =True
+    BOND =False
     CUT = 2.0
     kT = float(run_name_postfix)
-    n_cells = 5 # 2*30^3 = 54k
+    n_cells = 30 #2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
     rho = 1.0 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
-    mix_time = 1e3
+    mix_time = 1e4
     mix_kT = 10.0
-    shrink_time = 1e1
-    shrink_kT = 10.0
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e1
     bond_time = 5e3
-    final_run_time = 1e1
+    final_run_time = 5e5
     run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -300,23 +300,18 @@ if __name__ == "__main__":
 
 
     # Now we bond!
-    # No bonding for now
     if BOND is True:
         dpd.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
         hoomd.run(bond_time)
         bond_callback.disable()
+        deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
     dpd.set_params(kT = run_kT)
-    deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     # Clean up now
     # Move run files to dir
     # I think should be done in bash, then no race conditions
-    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
-    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
-    shutil.copy(cwd + "/gbp90job.o", cwd + run_dir + "job.o")
-    print(cwd + "/gbp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
-    shutil.copy(cwd + "/gbp90job_{}.o".format(run_name_postfix), cwd + run_dir + "job_{}.o".format(run_name_postfix))
+
     print("clean sim.py exit")
