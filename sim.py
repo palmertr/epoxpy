@@ -228,9 +228,9 @@ if __name__ == "__main__":
     run_name = sys.argv[2]
     #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
     run_dir = "/"+run_name
-    init_run_dir(run_dir)
-    shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
-    shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
+    #init_run_dir(run_dir)
+    #shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
+    #shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
     print(run_name_postfix)
     print(run_dir)
 

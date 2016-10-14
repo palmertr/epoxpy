@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 import subprocess as sp
 
 def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run_dir_0="foo_0/", run_dir_1="foo_1/"):
@@ -34,8 +35,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     return job_string
 
 
-def write_job_string(job_string):
-    with open("submit.sh", 'w') as out:
+def write_job_string(job_string, run_dir):
+    with open(run_dir + "submit.sh", 'w') as out:
             out.write(job_string)
 
 
@@ -43,15 +44,27 @@ if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "6:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "new_version"
+    project_name = "new_copy_test"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
+
     #make some dirs
     cmd = "mkdir -p {}{}".format(sim_dir, run_dir_0)
     sp.call(cmd, shell=True)
     cmd = "mkdir -p {}{}".format(sim_dir, run_dir_1)
     sp.call(cmd, shell=True)
+
+    cwd = os.getcwd()
+    cwd+= "/"
+    #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
     job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run_dir_0=run_dir_0, run_dir_1 =  run_dir_1)
-    write_job_string(job_string)
-    cmd = "sbatch submit.sh"
+    write_job_string(job_string, run_dir_0)
+    write_job_string(job_string, run_dir_1)
+
+    shutil.copy("sim.py", cwd + run_dir_0 + "sim.py")
+    shutil.copy("sim.py", cwd + run_dir_1 + "sim.py")
+
+
+    cmd = "sbatch "+ run_dir_0 + "submit.sh"
+    print(cmd)
     sp.call(cmd, shell=True)
