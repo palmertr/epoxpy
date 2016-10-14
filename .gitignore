@@ -3,3 +3,4 @@ runs/
 *.hoomdxml
 *.dcd
 *.o
+.DS_Store
