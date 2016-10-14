@@ -28,8 +28,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     # This next line is not used yet
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 12 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python sim.py {} {} --gpu=0 > {}{}job_0.o &\n".format(sys.argv[1], run_dir_0, sim_dir, run_dir_0)
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python sim.py {} {} --gpu=1 > {}{}job_1.o &\n".format(sys.argv[2], run_dir_1, sim_dir, run_dir_1)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, sys.argv[1], run_dir_0, sim_dir, run_dir_0)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python {}sim.py {} {} --gpu=1 > {}{}job_1.o &\n".format(run_dir_0, sys.argv[2], run_dir_1, sim_dir, run_dir_1)
     job_string +="wait\n"
     job_string +="echo 'all done!'"
     return job_string
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "6:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "new_copy_test"
+    project_name = "just_temp_sweep"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 

@@ -243,20 +243,20 @@ if __name__ == "__main__":
     BOND =False
     CUT = 2.0
     kT = float(run_name_postfix)
-    n_cells = 30 #2*30^3 = 54k
+    n_cells = 15 #2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
     rho = 1.0 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
-    mix_time = 1e4
-    mix_kT = 10.0
+    mix_time = 1e5
+    mix_kT = 20.0
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e1
     bond_time = 5e3
-    final_run_time = 5e5
+    final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
