@@ -66,5 +66,4 @@ if __name__ == "__main__":
 
 
     cmd = "sbatch "+ run_dir_0 + "submit.sh"
-    print(cmd)
     sp.call(cmd, shell=True)
