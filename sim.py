@@ -133,6 +133,18 @@ def get_bond_rank(index):
     return rank
 
 
+
+def pbc_diff(p1, p2, axes):
+    dr = p1 - p2
+    for i, p in enumerate(dr):
+        dr[i] = abs(dr[i])
+        if dr[i] > axes[i]*0.5:
+            dr[i]-=axes[i]
+    return np.linalg.norm(dr)
+
+
+
+
 def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
     snapshot = system.take_snapshot()
@@ -166,10 +178,11 @@ def find_pair(timestep):
     #print("Going into the loop")
     xyz0 = system.particles[indexA].position
     # Index magic, makes sure we loop over all particles
+    axis = [system.box.Lx, system.box.Ly, system.box.Lz]
     for p in group:
         xyz1 = p.position
         # Ugh, need to account for PBC
-        r = get_distance(xyz0, xyz1)
+        r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)#get_distance(xyz0, xyz1)
         if r < CUT:
             bond_rank = get_bond_rank(p.tag)
             if bond_rank < MAX_B_BONDS:
@@ -240,23 +253,23 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND =False
+    BOND =True
     CUT = 2.0
     kT = float(run_name_postfix)
     n_cells = 15 #2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
-    rho = 1.0 #float(run_name_postfix)
+    rho = 0.2 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
-    mix_time = 1e5
-    mix_kT = 20.0
+    mix_time = 5e4
+    mix_kT = 10.0
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
-    bond_period = 1e1
+    bond_period = 10e1
     bond_time = 5e3
-    final_run_time = 1e6
+    final_run_time = 5e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -273,10 +286,16 @@ if __name__ == "__main__":
     # Now we need a mix step
 
     nl = md.nlist.cell()
-    dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0)
+    dpdlj = md.pair.dpdlj(r_cut=3.0, nlist=nl, kT=mix_kT, seed=0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 3.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=1.0, sigma = 1.0, gamma = 1.0, r_cut = 3.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=1.0, sigma = 1.0, gamma = 1.0, r_cut = 3.0)
+
+    #dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
+    #dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0,  gamma = 1.0, r_cut = 3.0)
+    #dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 3.0)
+    #dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0, r_cut = 3.0)
+
 
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
@@ -286,28 +305,32 @@ if __name__ == "__main__":
     harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
 
 
-    md.integrate.mode_standard(dt=2e-2)
+    md.integrate.mode_standard(dt=1e-3)
     md.integrate.nve(group=hoomd.group.all())
     # For the mix we will set r_cut to be larger, this lets all of our
     # particles mix
     hoomd.run(mix_time)
     # Set r_cut back to what it should be
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0, gamma = 1.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 1.0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0, r_cut = 1.0)
+    #del dpd
+    dpdlj = md.pair.dpdlj(r_cut=1.0, nlist=nl, kT=run_kT, seed=0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
 
     # Now we bond!
     if BOND is True:
-        dpd.set_params(kT = bond_kT)
+        #for i in range(int(10800)):
+        #    find_pair(1)
+        dpdlj.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
         hoomd.run(bond_time)
         bond_callback.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
-    dpd.set_params(kT = run_kT)
+    dpdlj.set_params(kT = run_kT)
     hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     # Clean up now

@@ -44,7 +44,7 @@ if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "6:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "just_temp_sweep"
+    project_name = "dpd_lj_bond"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     cwd+= "/"
     #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
-    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run_dir_0=run_dir_0, run_dir_1 =  run_dir_1)
+    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim", run_dir_0=run_dir_0, run_dir_1 =  run_dir_1)
     write_job_string(job_string, run_dir_0)
     write_job_string(job_string, run_dir_1)
 
