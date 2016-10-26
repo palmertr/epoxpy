@@ -233,6 +233,16 @@ def init_run_dir(run_dir):
 
 
 
+def add_toughener(snapshot):
+    t_N = 50
+    N_p = snapshot.particles.N
+    # Resize the snapshot to make room for new particles
+    snapshot.particles.resize(N_p + t_N)
+
+    return snapshot
+
+
+
 if __name__ == "__main__":
     # These will be in an infile somday
     cwd = os.getcwd()
@@ -253,23 +263,23 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND =True
+    BOND =False
     CUT = 2.0
     kT = float(run_name_postfix)
     n_cells = 15 #2*30^3 = 54k
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
-    rho = 0.2 #float(run_name_postfix)
+    rho = 0.8 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
     mix_time = 5e4
     mix_kT = 10.0
     bond_kT = kT
     log_write = 1e4
     dcd_write = 1e4
-    bond_period = 10e1
+    bond_period = 1e2
     bond_time = 5e3
-    final_run_time = 5e6
+    final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
     system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -313,12 +323,17 @@ if __name__ == "__main__":
     # Set r_cut back to what it should be
     #del dpd
     dpdlj = md.pair.dpdlj(r_cut=1.0, nlist=nl, kT=run_kT, seed=0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 1.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 2.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
+    # Lets add the toughener here
+    #snapshot = system.take_snapshot(bonds=True)
+    #snapshot = add_toughener(snapshot)
+    #system.restore_snapshot(snapshot)
+    #deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"toughener.hoomdxml", all=True)
 
     # Now we bond!
     if BOND is True:
