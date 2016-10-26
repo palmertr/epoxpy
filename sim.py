@@ -270,7 +270,7 @@ if __name__ == "__main__":
     a = Basis(N = 1)
     b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
-    rho = 0.8 #float(run_name_postfix)
+    rho = 0.5 #float(run_name_postfix)
     uc = gen_lattice([a,b], rho)
     mix_time = 5e4
     mix_kT = 10.0
@@ -323,9 +323,9 @@ if __name__ == "__main__":
     # Set r_cut back to what it should be
     #del dpd
     dpdlj = md.pair.dpdlj(r_cut=1.0, nlist=nl, kT=run_kT, seed=0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 2.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
