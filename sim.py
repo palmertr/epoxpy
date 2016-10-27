@@ -181,7 +181,6 @@ def find_pair(timestep):
     axis = [system.box.Lx, system.box.Ly, system.box.Lz]
     for p in group:
         xyz1 = p.position
-        # Ugh, need to account for PBC
         r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)#get_distance(xyz0, xyz1)
         if r < CUT:
             bond_rank = get_bond_rank(p.tag)
@@ -263,7 +262,7 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND =False
+    BOND = True
     CUT = 2.0
     kT = float(run_name_postfix)
     n_cells = 15 #2*30^3 = 54k
@@ -323,9 +322,9 @@ if __name__ == "__main__":
     # Set r_cut back to what it should be
     #del dpd
     dpdlj = md.pair.dpdlj(r_cut=1.0, nlist=nl, kT=run_kT, seed=0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 1.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 1.0)
+    dpdlj.pair_coeff.set('A','A', epsilon=10.0, sigma = 1.0,  gamma = 1.0, r_cut = 2.5)
+    dpdlj.pair_coeff.set('B','B', epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.5)
+    dpdlj.pair_coeff.set('A','B', epsilon=00.0, sigma = 1.0, gamma = 1.0, r_cut = 2.5)
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
