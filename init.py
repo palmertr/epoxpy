@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import random
 from hoomd import * # I really don't like global imports like this
