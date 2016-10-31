@@ -6,6 +6,7 @@ import shutil
 import subprocess as sp
 import numpy as np
 import hoomd
+import init as my_init
 from hoomd import deprecated
 from hoomd import dump
 from hoomd import md
@@ -262,15 +263,15 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND = True
+    BOND = False
     CUT = 2.0
     kT = float(run_name_postfix)
-    n_cells = 15 #2*30^3 = 54k
-    a = Basis(N = 1)
-    b = Basis(btype = "B", N = 2)
+    #n_cells = 15 #2*30^3 = 54k
+    #a = Basis(N = 1)
+    #b = Basis(btype = "B", N = 2)
     #c = Basis(btype = "C", N = 5)
-    rho = 0.5 #float(run_name_postfix)
-    uc = gen_lattice([a,b], rho)
+    #rho = 0.5 #float(run_name_postfix)
+    #uc = gen_lattice([a,b], rho)
     mix_time = 5e4
     mix_kT = 10.0
     bond_kT = kT
@@ -278,10 +279,18 @@ if __name__ == "__main__":
     dcd_write = 1e4
     bond_period = 1e2
     bond_time = 5e3
-    final_run_time = 1e6
+    final_run_time = 1e4
     run_kT = kT
     # Maybe the infile returns a snapshot?
-    system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
+    #system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
+
+    A = my_init.Bead()
+    B = my_init.Bead(btype="B", mass = 1.0)
+    C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
+    snap = my_init.init_system({A : 100, B : 100, C : 5}, 0.1)
+
+
+    system = hoomd.init.read_snapshot(snap)
 
     # Could make this dynamic by getting types first
 
@@ -295,11 +304,11 @@ if __name__ == "__main__":
     # Now we need a mix step
 
     nl = md.nlist.cell()
-    dpdlj = md.pair.dpdlj(r_cut=3.0, nlist=nl, kT=mix_kT, seed=0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], epsilon=1.0, sigma = 1.0,  gamma = 1.0, r_cut = 3.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], epsilon=1.0, sigma = 1.0, gamma = 1.0, r_cut = 3.0)
-    dpdlj.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], epsilon=1.0, sigma = 1.0, gamma = 1.0, r_cut = 3.0)
+    dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=mix_kT, seed=0)
+    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
 
+    harmonic = md.bond.harmonic()
+    harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
     #dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
     #dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0,  gamma = 1.0, r_cut = 3.0)
     #dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 3.0)
@@ -309,22 +318,27 @@ if __name__ == "__main__":
     # Test to see if this will fix bondsbeing calculated
     # Manualy bond 2 to create bonds
     # TODO fix this hack
-    make_bond(0,1)
-    harmonic = md.bond.harmonic()
-    harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
+    #make_bond(0,1)
+    #harmonic = md.bond.harmonic()
+    #harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
 
 
-    md.integrate.mode_standard(dt=1e-3)
+    md.integrate.mode_standard(dt=1e-2)
     md.integrate.nve(group=hoomd.group.all())
     # For the mix we will set r_cut to be larger, this lets all of our
     # particles mix
     hoomd.run(mix_time)
-    # Set r_cut back to what it should be
-    #del dpd
-    dpdlj = md.pair.dpdlj(r_cut=1.0, nlist=nl, kT=run_kT, seed=0)
-    dpdlj.pair_coeff.set('A','A', epsilon=10.0, sigma = 1.0,  gamma = 1.0, r_cut = 2.5)
-    dpdlj.pair_coeff.set('B','B', epsilon=10.0, sigma = 1.0, gamma = 1.0, r_cut = 2.5)
-    dpdlj.pair_coeff.set('A','B', epsilon=00.0, sigma = 1.0, gamma = 1.0, r_cut = 2.5)
+    # Set things to normal coefs
+
+    dpd.pair_coeff.set('A','A', A=1.0, gamma = 1.0)
+    dpd.pair_coeff.set('B','B', A=1.0, gamma = 1.0)
+    dpd.pair_coeff.set('C','C', A=1.0, gamma = 1.0)
+
+    dpd.pair_coeff.set('A', 'B', A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set('A', 'C', A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set('B', 'C', A=10.0, gamma = 1.0)
+
+
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
@@ -338,13 +352,13 @@ if __name__ == "__main__":
     if BOND is True:
         #for i in range(int(10800)):
         #    find_pair(1)
-        dpdlj.set_params(kT = bond_kT)
+        dpd.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
         hoomd.run(bond_time)
         bond_callback.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
-    dpdlj.set_params(kT = run_kT)
+    dpd.set_params(kT = run_kT)
     hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     # Clean up now
