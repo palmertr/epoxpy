@@ -42,9 +42,9 @@ def write_job_string(job_string, run_dir):
 
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
-    job_time = "6:00:00"
+    job_time = "48:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "dpd_lj_rho_tune_0.5_r_cut_2.5_pair_e_bond"
+    project_name = "dpd_new_init_test_really_long_high_A_Bond_50"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 
@@ -63,6 +63,9 @@ if __name__ == "__main__":
 
     shutil.copy("sim.py", cwd + run_dir_0 + "sim.py")
     shutil.copy("sim.py", cwd + run_dir_1 + "sim.py")
+    
+    shutil.copy("init.py", cwd + run_dir_0 + "init.py")
+    shutil.copy("init.py", cwd + run_dir_1 + "init.py")
 
 
     cmd = "sbatch "+ run_dir_0 + "submit.sh"
