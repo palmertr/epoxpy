@@ -263,7 +263,7 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND = False
+    BOND = True
     CUT = 2.0
     kT = float(run_name_postfix)
     #n_cells = 15 #2*30^3 = 54k
@@ -279,15 +279,15 @@ if __name__ == "__main__":
     dcd_write = 1e4
     bond_period = 1e2
     bond_time = 5e3
-    final_run_time = 1e4
+    final_run_time = 1e7
     run_kT = kT
     # Maybe the infile returns a snapshot?
     #system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
     A = my_init.Bead()
     B = my_init.Bead(btype="B", mass = 1.0)
-    C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
-    snap = my_init.init_system({A : 100, B : 100, C : 5}, 0.1)
+    C = my_init.PolyBead(btype="C", mass = 1.0, N = 100)
+    snap = my_init.init_system({A : 10000, B : 20000, C : 120}, 1)
 
 
     system = hoomd.init.read_snapshot(snap)
@@ -309,6 +309,7 @@ if __name__ == "__main__":
 
     harmonic = md.bond.harmonic()
     harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+    harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
     #dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
     #dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0,  gamma = 1.0, r_cut = 3.0)
     #dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 3.0)
@@ -334,9 +335,9 @@ if __name__ == "__main__":
     dpd.pair_coeff.set('B','B', A=1.0, gamma = 1.0)
     dpd.pair_coeff.set('C','C', A=1.0, gamma = 1.0)
 
-    dpd.pair_coeff.set('A', 'B', A=10.0, gamma = 1.0)
-    dpd.pair_coeff.set('A', 'C', A=10.0, gamma = 1.0)
-    dpd.pair_coeff.set('B', 'C', A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set('A', 'B', A=100.0, gamma = 1.0)
+    dpd.pair_coeff.set('A', 'C', A=100.0, gamma = 1.0)
+    dpd.pair_coeff.set('B', 'C', A=100.0, gamma = 1.0)
 
 
 

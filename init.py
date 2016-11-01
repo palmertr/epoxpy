@@ -63,7 +63,8 @@ def init_system(building_block_dic, rho):
 
     L = (system_mass/rho)**(1.0/3.0)
 
-
+    # Hard code in the A-B bond type
+    bond_list.append("A-B")
     snap = data.make_snapshot(N=N,
             box=data.boxdim(L=L),
             particle_types=particle_types,
