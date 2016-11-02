@@ -263,7 +263,7 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND = True
+    BOND = False
     CUT = 2.0
     kT = float(run_name_postfix)
     #n_cells = 15 #2*30^3 = 54k
@@ -278,8 +278,8 @@ if __name__ == "__main__":
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e2
-    bond_time = 5e3
-    final_run_time = 1e7
+    bond_time = 4e5
+    final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
     #system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
@@ -335,9 +335,9 @@ if __name__ == "__main__":
     dpd.pair_coeff.set('B','B', A=1.0, gamma = 1.0)
     dpd.pair_coeff.set('C','C', A=1.0, gamma = 1.0)
 
-    dpd.pair_coeff.set('A', 'B', A=100.0, gamma = 1.0)
-    dpd.pair_coeff.set('A', 'C', A=100.0, gamma = 1.0)
-    dpd.pair_coeff.set('B', 'C', A=100.0, gamma = 1.0)
+    dpd.pair_coeff.set('A', 'B', A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set('A', 'C', A=10.0, gamma = 1.0)
+    dpd.pair_coeff.set('B', 'C', A=10.0, gamma = 1.0)
 
 
 
