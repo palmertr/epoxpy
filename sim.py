@@ -286,8 +286,11 @@ if __name__ == "__main__":
 
     A = my_init.Bead()
     B = my_init.Bead(btype="B", mass = 1.0)
-    C = my_init.PolyBead(btype="C", mass = 1.0, N = 100)
-    snap = my_init.init_system({A : 10000, B : 20000, C : 120}, 1)
+    C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
+    # 40 wt C = 2,000
+    # 10 wt C = 1,667
+
+    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
 
 
     system = hoomd.init.read_snapshot(snap)
