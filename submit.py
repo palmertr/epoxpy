@@ -44,7 +44,7 @@ if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "48:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "dpd_new_init_40wt_B00"
+    project_name = "dpd_new_init_40wt_new_bond_test_trans"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 

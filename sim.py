@@ -179,14 +179,14 @@ def find_pair(timestep):
         r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)
         if r < CUT:
             indexB = p.tag
-            bond_rank = get_bond_rank(indexB)
+            bond_rank = get_bond_rank(indexB, snapshot)
             if bond_rank < MAX_B_BONDS:
                 delta_e = 1.0
                 kT = bond_kT
                 if bond_test(kT, delta_e, bond_rank):
                     #bond_test
                     make_bond(indexA, indexB, snapshot)
-                    #print("Found one, bonding {} and {}".format(indexA, indexB))
+                    print("Found one, bonding {} and {}".format(indexA, indexB))
                     #print("Rank of A {} type of A {}".format(rank, typeA))
                     #print("Rank of B {} type of B {}".format(bond_rank, typeB))
                     return True
@@ -249,8 +249,8 @@ if __name__ == "__main__":
     MAX_B_BONDS = 2
 
     hoomd.context.initialize()
-    BOND = False
-    CUT = 2.0
+    BOND = True
+    CUT = 1.0
     kT = float(run_name_postfix)
     #n_cells = 15 #2*30^3 = 54k
     #a = Basis(N = 1)
@@ -258,13 +258,13 @@ if __name__ == "__main__":
     #c = Basis(btype = "C", N = 5)
     #rho = 0.5 #float(run_name_postfix)
     #uc = gen_lattice([a,b], rho)
-    mix_time = 5e4
+    mix_time = 1e4 #5e4
     mix_kT = 10.0
-    bond_kT = kT
+    bond_kT = 10.0
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e2
-    bond_time = 4e5
+    bond_time = 8e5
     final_run_time = 1e6
     run_kT = kT
     # Maybe the infile returns a snapshot?
