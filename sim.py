@@ -92,15 +92,14 @@ def gen_lattice(basis_list, rho):
 #TODO Right now every function and their mom makes snapshots, should be able
 # to make one and pass it arround
 
-def init_bonds():
-    find_pair()
-    harmonic = md.bond.harmonic()
-    harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
+#def init_bonds():
+#    find_pair()
+#    harmonic = md.bond.harmonic()
+#    harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
 
 
 
-def make_bond(indexA, indexB):
-    snapshot = system.take_snapshot(bonds=True)
+def make_bond(indexA, indexB, snapshot):
     n_bonds = snapshot.bonds.N
     snapshot.bonds.resize(n_bonds + 1)
     snapshot.bonds.group[n_bonds] = [indexA, indexB]
@@ -110,24 +109,22 @@ def make_bond(indexA, indexB):
     # TODO: dynamicly set the bond lenght
 
 
-def bond_test(kT):
+def bond_test(kT, delta_e, bond_rank):
     # No idea if this is thread safe, watch out for MPI gotchas
-    #random.seed(a=0)
     # Should be able to to tune rate with delta_e and kT
-    delta_e = 1
+    #delta_e = 1
     mb_stats = np.exp(-delta_e/kT)
-    if mb_stats > random.random():
+    # Devides by bond rank to make it less probable, add one to prvent rank 0
+    # issues
+    if mb_stats/float(bond_rank+1) > random.random():
         return True
     else:
         return False
 
-def get_distance(xyz0, xyz1):
-    return np.linalg.norm(np.array(xyz0)-np.array(xyz1))
 
 
-def get_bond_rank(index):
+def get_bond_rank(index, snapshot):
     rank = 0
-    snapshot = system.take_snapshot(bonds=True)
     for bond in snapshot.bonds.group:
         if bond[0] == index or bond[1] == index:
             rank += 1
@@ -148,7 +145,7 @@ def pbc_diff(p1, p2, axes):
 
 def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
-    snapshot = system.take_snapshot()
+    snapshot = system.take_snapshot(bonds=True)
     N_p = snapshot.particles.N
     # Keep in mind we if N = 5, index 0..4
     indexA = random.randint(0, N_p-1)
@@ -163,7 +160,7 @@ def find_pair(timestep):
         MAX_RANK_B = MAX_A_BONDS
     # Check to see if it can make more bonds
 
-    rank = get_bond_rank(indexA)
+    rank = get_bond_rank(indexA, snapshot)
 
     if typeA == "A" and rank == MAX_A_BONDS:
         print("Can't bond it anymore")
@@ -175,41 +172,40 @@ def find_pair(timestep):
     # If its mixed, it shouldn't be too bad to loop till we find one even if
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
-    found = False
-    #print("Going into the loop")
     xyz0 = system.particles[indexA].position
-    # Index magic, makes sure we loop over all particles
     axis = [system.box.Lx, system.box.Ly, system.box.Lz]
     for p in group:
         xyz1 = p.position
-        r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)#get_distance(xyz0, xyz1)
+        r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)
         if r < CUT:
-            bond_rank = get_bond_rank(p.tag)
+            indexB = p.tag
+            bond_rank = get_bond_rank(indexB)
             if bond_rank < MAX_B_BONDS:
-                #bond_test
-                indexB = p.tag
-                make_bond(indexA, indexB)
-                #print("Found one, bonding {} and {}".format(indexA, indexB))
-                found = True
-                #print("Rank of A {} type of A {}".format(rank, typeA))
-                #print("Rank of B {} type of B {}".format(get_bond_rank(p.tag), typeB))
-                return True
+                delta_e = 1.0
+                kT = bond_kT
+                if bond_test(kT, delta_e, bond_rank):
+                    #bond_test
+                    make_bond(indexA, indexB, snapshot)
+                    #print("Found one, bonding {} and {}".format(indexA, indexB))
+                    #print("Rank of A {} type of A {}".format(rank, typeA))
+                    #print("Rank of B {} type of B {}".format(bond_rank, typeB))
+                    return True
 
 
 
 
 
-def my_callback(timestep):
-    n_bonds = system.bonds.bdata.getN()
-    if n_bonds == 0:
-        init_bonds()
-        print("first bond")
-    else:
-        print("next bond")
-        if find_pair() is True:
-            print("bonded")
-        else:
-            print("could not bond")
+#def my_callback(timestep):
+#    n_bonds = system.bonds.bdata.getN()
+#    if n_bonds == 0:
+#        init_bonds()
+#        print("first bond")
+#    else:
+#        print("next bond")
+#        if find_pair() is True:
+#            print("bonded")
+#        else:
+#            print("could not bond")
 
 
 def get_system_mass():
@@ -230,16 +226,6 @@ def init_run_dir(run_dir):
         os.makedirs(cwd + run_dir)
         print("made")
         print(cwd + run_dir)
-
-
-
-def add_toughener(snapshot):
-    t_N = 50
-    N_p = snapshot.particles.N
-    # Resize the snapshot to make room for new particles
-    snapshot.particles.resize(N_p + t_N)
-
-    return snapshot
 
 
 
