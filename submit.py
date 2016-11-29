@@ -43,8 +43,10 @@ def write_job_string(job_string, run_dir):
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "48:00:00"
+    # This should be the folder that sim.py, init.py, and submit.py are in
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "dpd_new_init_40wt_new_bond_test_trans_10xbond_DE0.1_nobond"
+    project_name = "boeing_test"
+    # This will be a sub folder in the sim_dir directory
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 
