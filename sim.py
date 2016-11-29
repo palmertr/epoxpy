@@ -264,8 +264,8 @@ if __name__ == "__main__":
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e1
-    bond_time = 8e5
-    final_run_time = 1e6
+    bond_time = 1e5
+    final_run_time = 1e5
     run_kT = kT
     # Maybe the infile returns a snapshot?
     #system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
