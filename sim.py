@@ -181,7 +181,7 @@ def find_pair(timestep):
             indexB = p.tag
             bond_rank = get_bond_rank(indexB, snapshot)
             if bond_rank < MAX_B_BONDS:
-                delta_e = 1.0
+                delta_e = 0.1
                 kT = bond_kT
                 if bond_test(kT, delta_e, bond_rank):
                     #bond_test
@@ -263,7 +263,7 @@ if __name__ == "__main__":
     bond_kT = 10.0
     log_write = 1e4
     dcd_write = 1e4
-    bond_period = 1e2
+    bond_period = 1e1
     bond_time = 8e5
     final_run_time = 1e6
     run_kT = kT

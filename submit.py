@@ -14,7 +14,6 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     job_string +="#SBATCH -N 1\n"
     job_string +="#SBATCH -n 16\n"
     job_string +="#SBATCH -o {}{}main.o\n".format(sim_dir, run_dir_0)
-    #job_string +="#SBATCH -o main.o\n"
     job_string +="#SBATCH --mail-type=All\n"
     job_string +="#SBATCH --mail-user={}\n".format(email)
     job_string +="#SBATCH -t {}\n".format(job_time)
@@ -22,10 +21,11 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     job_string +="#SBATCH --gres=gpu:2\n"
     job_string +="\n"
     job_string +="module purge\n"
+    # These next two lines need to be modified for your module env
     job_string +="module use /scratch/erjank_project/mike_modules/modulefiles/\n"
     job_string +="module load hoomd/2.1.0\n"
     job_string +="cd {}\n".format(sim_dir)
-    # This next line is not used yet
+    # This line assumes a 48hr wall clock time and may be commented out
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 48 * 3600 - 10 * 60))\n"
     job_string +="\n"
     job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, sys.argv[1], run_dir_0, sim_dir, run_dir_0)
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
     job_time = "48:00:00"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "dpd_new_init_40wt_new_bond_test_trans"
+    project_name = "dpd_new_init_40wt_new_bond_test_trans_10xbond_DE0.1_nobond"
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
 
