@@ -12,93 +12,6 @@ from hoomd import dump
 from hoomd import md
 
 
-class Basis:
-
-    def __init__(self, diameter=1.0, mass=1.0, charge=0.0, btype="A", N=1):
-
-        self.diameter = diameter
-        self.mass = mass
-        self.charge = charge
-        self.btype = btype
-        self.N = N
-        self.gen_cords()
-
-
-    def gen_cords(self):
-
-        END = 1.0
-        self.cords = []
-
-        for cord in np.linspace(0.1, END, num = self.N):
-            type_dic = {
-            "A": [cord, 0.5, 0.5],
-            "B": [0.5, cord, 0.5],
-            "C": [0.5, 0.5, cord]
-            }
-            self.cords.append(type_dic[self.btype])
-
-    def get_basis_mass(self):
-        return self.mass*self.N
-
-
-def gen_lattice(basis_list, rho):
-    R""" Wraper function for hoomd.lattice.unitcell
-
-    Args:
-        basis_list (list): List of basis to use in unit cell
-
-    Returns:
-        hoomd.lattice.unitcell
-
-    """
-    all_types = []
-    all_cords = []
-    all_masses = []
-    all_charges = []
-    all_diameters = []
-    total_mass = 0
-    N = 0
-
-    for basis in basis_list:
-        all_types += [basis.btype]*basis.N
-        all_cords += basis.cords
-        all_masses += [basis.mass]*basis.N
-        all_charges += [basis.charge]*basis.N
-        all_diameters += [basis.diameter]*basis.N
-        N += basis.N
-        total_mass += basis.get_basis_mass()
-
-    # volume calc
-
-    V = total_mass/rho
-    print("total mass is {}".format(total_mass))
-
-    L = V**(1/3)
-
-    uc = hoomd.lattice.unitcell(N = N,
-                                a1 = [L, 0, 0],
-                                a2 = [0, L, 0],
-                                a3 = [0, 0, L],
-                                dimensions = 3,
-                                position = all_cords,
-                                type_name = all_types,
-                                mass = all_masses,
-                                charge = all_charges,
-                                diameter = all_diameters
-                                )
-    return uc
-
-
-#TODO Right now every function and their mom makes snapshots, should be able
-# to make one and pass it arround
-
-#def init_bonds():
-#    find_pair()
-#    harmonic = md.bond.harmonic()
-#    harmonic.bond_coeff.set('A-B', k=330.0, r0=1.99)
-
-
-
 def make_bond(indexA, indexB, snapshot):
     n_bonds = snapshot.bonds.N
     snapshot.bonds.resize(n_bonds + 1)
@@ -106,7 +19,7 @@ def make_bond(indexA, indexB, snapshot):
     snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
     snapshot.bonds.typeid[0] = 0
     system.restore_snapshot(snapshot)
-    # TODO: dynamicly set the bond lenght
+    # TODO: This overwrites C-C bond information
 
 
 def bond_test(kT, delta_e, bond_rank):
@@ -141,14 +54,13 @@ def pbc_diff(p1, p2, axes):
     return np.linalg.norm(dr)
 
 
-
-
 def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
     snapshot = system.take_snapshot(bonds=True)
     N_p = snapshot.particles.N
     # Keep in mind we if N = 5, index 0..4
     indexA = random.randint(0, N_p-1)
+    #TODO: This can waste time by selecting a 'C' type
     typeA = system.particles[indexA].type
     if typeA == "A":
         group = groupB
@@ -191,23 +103,6 @@ def find_pair(timestep):
                     #print("Rank of B {} type of B {}".format(bond_rank, typeB))
                     return True
 
-
-
-
-
-#def my_callback(timestep):
-#    n_bonds = system.bonds.bdata.getN()
-#    if n_bonds == 0:
-#        init_bonds()
-#        print("first bond")
-#    else:
-#        print("next bond")
-#        if find_pair() is True:
-#            print("bonded")
-#        else:
-#            print("could not bond")
-
-
 def get_system_mass():
     total_mass = 0
     for p in system.particles:
@@ -217,17 +112,6 @@ def get_system_mass():
 def calc_target_V(rho_i, rho_f, V_i):
     return rho_i*V_i/rho_f
 
-def init_run_dir(run_dir):
-    print("making dir..")
-    cwd = os.getcwd()
-    if os.path.isdir(cwd+ run_dir) is not True:
-        print(cwd + run_dir)
-        print(os.path.isfile(cwd+ run_dir))
-        os.makedirs(cwd + run_dir)
-        print("made")
-        print(cwd + run_dir)
-
-
 
 if __name__ == "__main__":
     # These will be in an infile somday
@@ -235,15 +119,10 @@ if __name__ == "__main__":
     # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
     run_name = sys.argv[2]
-    #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
     run_dir = "/"+run_name
-    #init_run_dir(run_dir)
-    #shutil.copy(cwd + "/submit.sh", cwd + run_dir + "submit.sh")
-    #shutil.copy(cwd + "/sim.py", cwd + run_dir + "sim.py")
     print(run_name_postfix)
     print(run_dir)
 
-    # run vars below
 
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
@@ -252,13 +131,7 @@ if __name__ == "__main__":
     BOND = True
     CUT = 1.0
     kT = float(run_name_postfix)
-    #n_cells = 15 #2*30^3 = 54k
-    #a = Basis(N = 1)
-    #b = Basis(btype = "B", N = 2)
-    #c = Basis(btype = "C", N = 5)
-    #rho = 0.5 #float(run_name_postfix)
-    #uc = gen_lattice([a,b], rho)
-    mix_time = 1e4 #5e4
+    mix_time = 1e4
     mix_kT = 10.0
     bond_kT = 10.0
     log_write = 1e4
@@ -267,8 +140,6 @@ if __name__ == "__main__":
     bond_time = 1e5
     final_run_time = 1e5
     run_kT = kT
-    # Maybe the infile returns a snapshot?
-    #system = hoomd.init.create_lattice(unitcell=uc, n=n_cells);
 
     A = my_init.Bead()
     B = my_init.Bead(btype="B", mass = 1.0)
@@ -277,7 +148,6 @@ if __name__ == "__main__":
     # 10 wt C = 1,667
 
     snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
-
 
     system = hoomd.init.read_snapshot(snap)
 
@@ -299,23 +169,9 @@ if __name__ == "__main__":
     harmonic = md.bond.harmonic()
     harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
     harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-    #dpd = md.pair.dpd(r_cut=2.0, nlist=nl, kT=mix_kT, seed=0)
-    #dpd.pair_coeff.set(['A', 'B', 'C'], ['A', 'B', 'C'], A=1.0,  gamma = 1.0, r_cut = 3.0)
-    #dpd.pair_coeff.set(['A', 'B', 'C'], ['B', 'C', 'A'], A=10.0, gamma = 1.0, r_cut = 3.0)
-    #dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=10.0, gamma = 1.0, r_cut = 3.0)
-
-
-    # Test to see if this will fix bondsbeing calculated
-    # Manualy bond 2 to create bonds
-    # TODO fix this hack
-    #make_bond(0,1)
-    #harmonic = md.bond.harmonic()
-    #harmonic.bond_coeff.set('A-B', k=400.0, r0=1.0)
-
-
+    
     md.integrate.mode_standard(dt=1e-2)
     md.integrate.nve(group=hoomd.group.all())
-    # For the mix we will set r_cut to be larger, this lets all of our
     # particles mix
     hoomd.run(mix_time)
     # Set things to normal coefs
@@ -332,27 +188,16 @@ if __name__ == "__main__":
 
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
-    # Lets add the toughener here
-    #snapshot = system.take_snapshot(bonds=True)
-    #snapshot = add_toughener(snapshot)
-    #system.restore_snapshot(snapshot)
-    #deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"toughener.hoomdxml", all=True)
-
     # Now we bond!
     if BOND is True:
-        #for i in range(int(10800)):
-        #    find_pair(1)
         dpd.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
         hoomd.run(bond_time)
         bond_callback.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
+    
     dpd.set_params(kT = run_kT)
     hoomd.run(final_run_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
-    # Clean up now
-    # Move run files to dir
-    # I think should be done in bash, then no race conditions
-
-    print("clean sim.py exit")
+    print("sim fin")
