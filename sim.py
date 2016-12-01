@@ -16,8 +16,10 @@ def make_bond(indexA, indexB, snapshot):
     n_bonds = snapshot.bonds.N
     snapshot.bonds.resize(n_bonds + 1)
     snapshot.bonds.group[n_bonds] = [indexA, indexB]
-    snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
-    snapshot.bonds.typeid[0] = 0
+    print(snapshot.bonds.types)
+    #snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
+    #sets new bond to be A-B type
+    snapshot.bonds.typeid[n_bonds] = 1
     system.restore_snapshot(snapshot)
     # TODO: This overwrites C-C bond information
 
@@ -58,10 +60,12 @@ def find_pair(timestep):
     # Until I can hack a way to get access to the neighborlist
     snapshot = system.take_snapshot(bonds=True)
     N_p = snapshot.particles.N
+    typeA = "C"
+    while typeA == "C":
     # Keep in mind we if N = 5, index 0..4
-    indexA = random.randint(0, N_p-1)
+        indexA = random.randint(0, N_p-1)
     #TODO: This can waste time by selecting a 'C' type
-    typeA = system.particles[indexA].type
+        typeA = system.particles[indexA].type
     if typeA == "A":
         group = groupB
         typeB = "B"
@@ -137,8 +141,8 @@ if __name__ == "__main__":
     log_write = 1e4
     dcd_write = 1e4
     bond_period = 1e1
-    bond_time = 1e5
-    final_run_time = 1e5
+    bond_time = 1e3
+    final_run_time = 1e3
     run_kT = kT
 
     A = my_init.Bead()
@@ -147,7 +151,7 @@ if __name__ == "__main__":
     # 40 wt C = 2,000
     # 10 wt C = 1,667
 
-    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
+    snap = my_init.init_system({A : 10, B : 20, C : 2}, 1)
 
     system = hoomd.init.read_snapshot(snap)
 
