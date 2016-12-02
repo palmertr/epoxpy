@@ -45,7 +45,7 @@ if __name__ == "__main__":
     job_time = "48:00:00"
     # This should be the folder that sim.py, init.py, and submit.py are in
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "btest-b1e5"
+    project_name = "btest-b1e3"
     # This will be a sub folder in the sim_dir directory
     run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])

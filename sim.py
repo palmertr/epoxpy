@@ -96,7 +96,7 @@ def find_pair(timestep):
             if bond_rank < MAX_B_BONDS:
                 delta_e = 1.0
                 kT = bond_kT
-                if bond_test(tem_log.query('temperature'), delta_e, bond_rank):
+                if bond_test(temp_log.query('temperature'), delta_e, bond_rank):
                     #bond_test
                     make_bond(indexA, indexB, snapshot)
                     print("Found one, bonding {} and {}".format(indexA, indexB))
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
     bond_period = 1e1
-    bond_time = 1e5
+    bond_time = 1e3
     bond_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (bond_time, 1.0)])
     print("Number of bonding steps: {}".format(bond_time/bond_period))
 
