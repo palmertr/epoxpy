@@ -16,12 +16,9 @@ def make_bond(indexA, indexB, snapshot):
     n_bonds = snapshot.bonds.N
     snapshot.bonds.resize(n_bonds + 1)
     snapshot.bonds.group[n_bonds] = [indexA, indexB]
-    print(snapshot.bonds.types)
-    #snapshot.bonds.types = ['A-B'] #Shouldn't do this every time
     #sets new bond to be A-B type
     snapshot.bonds.typeid[n_bonds] = 1
     system.restore_snapshot(snapshot)
-    # TODO: This overwrites C-C bond information
 
 
 def bond_test(kT, delta_e, bond_rank):
@@ -97,7 +94,7 @@ def find_pair(timestep):
             indexB = p.tag
             bond_rank = get_bond_rank(indexB, snapshot)
             if bond_rank < MAX_B_BONDS:
-                delta_e = 0.1
+                delta_e = 1.0
                 kT = bond_kT
                 if bond_test(kT, delta_e, bond_rank):
                     #bond_test
@@ -119,67 +116,59 @@ def calc_target_V(rho_i, rho_f, V_i):
 
 if __name__ == "__main__":
     # These will be in an infile somday
+    hoomd.context.initialize()
     cwd = os.getcwd()
-    # Do not change this sys.argv!
     run_name_postfix = sys.argv[1]
     run_name = sys.argv[2]
     run_dir = "/"+run_name
     print(run_name_postfix)
     print(run_dir)
+    end_eql_kT = float(run_name_postfix)
 
-
-    MAX_A_BONDS = 4
-    MAX_B_BONDS = 2
-
-    hoomd.context.initialize()
-    BOND = True
-    CUT = 1.0
-    kT = float(run_name_postfix)
-    mix_time = 1e4
-    mix_kT = 10.0
-    bond_kT = 10.0
-    log_write = 1e4
-    dcd_write = 1e4
-    bond_period = 1e1
-    bond_time = 1e3
-    final_run_time = 1e3
-    run_kT = kT
-
+    #Init System
     A = my_init.Bead()
     B = my_init.Bead(btype="B", mass = 1.0)
     C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
     # 40 wt C = 2,000
     # 10 wt C = 1,667
-
-    snap = my_init.init_system({A : 10, B : 20, C : 2}, 1)
-
+    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
     system = hoomd.init.read_snapshot(snap)
 
-    # Could make this dynamic by getting types first
+    #Sys Parmas
+    log_write = 1e4
+    dcd_write = 1e4
 
+    # MIX
+    mix_kT = 5.0
+    mix_time = 1e5
+
+    # BOND
+    # Bond cut off
+    BOND = True
+    CUT = 1.0
+    MAX_A_BONDS = 4
+    MAX_B_BONDS = 2
+    bond_period = 1e1
+    bond_time = 1e5
+    bond_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (bond_time, 1.0)])
+    print("Number of bonding steps: {}".format(bond_time/bond_period))
+
+    # EQL
+    eql_time = 1e6
+    eql_kT = hoomd.variant.linear_interp(points = [(0, 1.0), (eql_time, end_eql_kT)])
+    ###
+
+
+    #Mix Step/MD Setup
     groupA = hoomd.group.type(name='a-particles', type='A')
     groupB = hoomd.group.type(name='b-particles', type='B')
-
-    print(cwd + run_dir + "start.hoomdxml")
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd + run_dir + "start.hoomdxml", all=True)
     hoomd.analyze.log(filename= cwd + run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
     dump.dcd(filename=cwd + run_dir +"traj.dcd", period=dcd_write, overwrite=True)
-    # Now we need a mix step
 
     nl = md.nlist.cell()
     dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=mix_kT, seed=0)
-    dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
-
-    harmonic = md.bond.harmonic()
-    harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-    harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-    
-    md.integrate.mode_standard(dt=1e-2)
-    md.integrate.nve(group=hoomd.group.all())
-    # particles mix
-    hoomd.run(mix_time)
-    # Set things to normal coefs
-
+    #dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
     dpd.pair_coeff.set('A','A', A=1.0, gamma = 1.0)
     dpd.pair_coeff.set('B','B', A=1.0, gamma = 1.0)
     dpd.pair_coeff.set('C','C', A=1.0, gamma = 1.0)
@@ -188,8 +177,13 @@ if __name__ == "__main__":
     dpd.pair_coeff.set('A', 'C', A=10.0, gamma = 1.0)
     dpd.pair_coeff.set('B', 'C', A=10.0, gamma = 1.0)
 
+    harmonic = md.bond.harmonic()
+    harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+    harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-
+    md.integrate.mode_standard(dt=1e-2)
+    md.integrate.nve(group=hoomd.group.all())
+    hoomd.run(mix_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
 
     # Now we bond!
@@ -200,8 +194,7 @@ if __name__ == "__main__":
         bond_callback.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
-    
-    dpd.set_params(kT = run_kT)
-    hoomd.run(final_run_time)
+    dpd.set_params(kT = eql_kT)
+    hoomd.run(eql_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")
