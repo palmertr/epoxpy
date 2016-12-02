@@ -96,7 +96,7 @@ def find_pair(timestep):
             if bond_rank < MAX_B_BONDS:
                 delta_e = 1.0
                 kT = bond_kT
-                if bond_test(kT, delta_e, bond_rank):
+                if bond_test(tem_log.query('temperature'), delta_e, bond_rank):
                     #bond_test
                     make_bond(indexA, indexB, snapshot)
                     print("Found one, bonding {} and {}".format(indexA, indexB))
@@ -190,8 +190,10 @@ if __name__ == "__main__":
     if BOND is True:
         dpd.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
+        temp_log = hoomd.analyze.log(filename=None, quantities=["temperature"], period = bond_period)
         hoomd.run(bond_time)
         bond_callback.disable()
+        temp_log.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
     dpd.set_params(kT = eql_kT)
