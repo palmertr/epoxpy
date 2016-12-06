@@ -155,15 +155,18 @@ if __name__ == "__main__":
 
     # EQL
     eql_time = 1e6
-    eql_kT = hoomd.variant.linear_interp(points = [(0, 1.0), (eql_time, end_eql_kT)])
+    eql_kT = hoomd.variant.linear_interp(points = [(0, 1.0), (eql_time, end_eql_kT), (eql_time*2, end_eql_kT)])
     ###
 
 
     #Mix Step/MD Setup
     groupA = hoomd.group.type(name='a-particles', type='A')
     groupB = hoomd.group.type(name='b-particles', type='B')
+    groupC = hoomd.group.type(name='c-particles', type='C')
+    hoomd.meta.dump_metadata(filename =  cwd + run_dir + "metadata.json", indent=2)
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd + run_dir + "start.hoomdxml", all=True)
     hoomd.analyze.log(filename= cwd + run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
+    deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
     dump.dcd(filename=cwd + run_dir +"traj.dcd", period=dcd_write, overwrite=True)
 
     nl = md.nlist.cell()
