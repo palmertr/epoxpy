@@ -139,8 +139,9 @@ if __name__ == "__main__":
     dcd_write = 1e4
 
     # MIX
-    mix_kT = 5.0
     mix_time = 1e5
+    mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0), (mix_time, 1.0), (mix_time*5, 0.1)]
+    mix_time = 1e5*7
 
     # BOND
     # Bond cut off
@@ -149,9 +150,9 @@ if __name__ == "__main__":
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
     bond_period = 1e1
-    bond_time = 1e5
-    bond_end_kT = 1.0
-    bond_kT = hoomd.variant.linear_interp(points = [(0, 2.0), (bond_time, bond_end_kT])
+    bond_time = 5e5
+    bond_end_kT = 0.1
+    bond_kT = hoomd.variant.linear_interp(points = [(0, 0.1), (bond_time, bond_end_kT)])
     print("Number of bonding steps: {}".format(bond_time/bond_period))
 
     # EQL
@@ -200,7 +201,7 @@ if __name__ == "__main__":
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
     dpd.set_params(kT = eql_kT)
-    hoomd.run(eql_time*2)
     deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
+    hoomd.run(eql_time*2)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")
