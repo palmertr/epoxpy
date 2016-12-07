@@ -151,7 +151,7 @@ if __name__ == "__main__":
     bond_period = 1e1
     bond_time = 1e5
     bond_end_kT = 1.0
-    bond_kT = hoomd.variant.linear_interp(points = [(0, 2.0), (bond_time, bond_end_kT])
+    bond_kT = hoomd.variant.linear_interp(points = [(0, 2.0), (bond_time, bond_end_kT)])
     print("Number of bonding steps: {}".format(bond_time/bond_period))
 
     # EQL
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
     dpd.set_params(kT = eql_kT)
-    hoomd.run(eql_time*2)
     deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
+    hoomd.run(eql_time*2)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")
