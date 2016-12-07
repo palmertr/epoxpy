@@ -123,7 +123,7 @@ if __name__ == "__main__":
     run_dir = "/"+run_name
     print(run_name_postfix)
     print(run_dir)
-    end_eql_kT = float(run_name_postfix)
+    #end_eql_kT = float(run_name_postfix)
 
     #Init System
     A = my_init.Bead()
@@ -131,17 +131,18 @@ if __name__ == "__main__":
     C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
     # 40 wt C = 2,000
     # 10 wt C = 1,667
-    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
+    snap = my_init.init_system({A : 100, B : 200, C : 20}, 1)
+    #snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
     system = hoomd.init.read_snapshot(snap)
 
     #Sys Parmas
-    log_write = 1e4
-    dcd_write = 1e4
-
+    log_write = 1e3#1e4
+    dcd_write = 1e4#1e4
+    elapsed_time = 0
     # MIX
     mix_time = 1e5
-    mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0), (mix_time, 1.0), (mix_time*5, 0.1)])
-    mix_time = mix_time*7
+    mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
+    elapsed_time += mix_time
 
     # BOND
     # Bond cut off
@@ -150,14 +151,19 @@ if __name__ == "__main__":
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
     bond_period = 1e1
-    bond_time = 1e5
-    bond_end_kT = 0.1
-    bond_kT = hoomd.variant.linear_interp(points = [(0, 0.1), (bond_time, bond_end_kT)])
+    bond_time = 1e5 #float(run_name_postfix)
+    bond_end_kT = 2.0
+    bond_kT = hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, 2.0), (bond_time*2+elapsed_time, bond_end_kT)])
+    bond_time = bond_time*2
+    elapsed_time += bond_time
     print("Number of bonding steps: {}".format(bond_time/bond_period))
 
     # EQL
-    eql_time = 1e6
-    eql_kT = hoomd.variant.linear_interp(points = [(0, bond_end_kT), (eql_time, end_eql_kT), (eql_time*2, end_eql_kT)])
+    eql_time = 1e5
+    end_eql_kT = 1.0
+    eql_kT = hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
+    eql_time = eql_time*2
+    elapsed_time += eql_time
     ###
 
 
@@ -202,6 +208,6 @@ if __name__ == "__main__":
     # Now we run to eql
     dpd.set_params(kT = eql_kT)
     deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
-    hoomd.run(eql_time*2)
+    hoomd.run(eql_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")
