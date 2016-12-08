@@ -8,7 +8,7 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     job_string = "#!/bin/bash -l\n"
     if queue == "quick":
         job_string +="#SBATCH -A quick\n"
-        job_time = "2:30:00"
+        job_time = "1:00:00"
     job_string +="#SBATCH -p {}\n".format(queue)
     job_string +="#SBATCH -J {}\n".format(job_name)
     job_string +="#SBATCH -N 1\n"
@@ -28,8 +28,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     # This line assumes a 48hr wall clock time and may be commented out
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 48 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, sys.argv[1], run_dir_0, sim_dir, run_dir_0)
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python {}sim.py {} {} --gpu=1 > {}{}job_1.o &\n".format(run_dir_0, sys.argv[2], run_dir_1, sim_dir, run_dir_1)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, sys.argv[1], run_dir_0, sys.argv[2], sim_dir, run_dir_0)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python {}sim.py {} {} {} --gpu=1 > {}{}job_1.o &\n".format(run_dir_0, sys.argv[3], run_dir_1, sys.argv[4], sim_dir, run_dir_1)
     job_string +="wait\n"
     job_string +="echo 'all done!'"
     return job_string
@@ -45,10 +45,10 @@ if __name__ == "__main__":
     job_time = "2-00:00:00"
     # This should be the folder that sim.py, init.py, and submit.py are in
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "bond1e5-atT0.1-then-anneal-at"
+    project_name = "bonding-ramp-b-time"
     # This will be a sub folder in the sim_dir directory
-    run_dir_0 = "runs/{}_{}/".format(project_name, sys.argv[1])
-    run_dir_1 = "runs/{}_{}/".format(project_name, sys.argv[2])
+    run_dir_0 = "runs/{}-{}-bondkT-{}/".format(project_name, sys.argv[1], sys.argv[2])
+    run_dir_1 = "runs/{}-{}-bondkT-{}/".format(project_name, sys.argv[3], sys.argv[4])
 
     #make some dirs
     cmd = "mkdir -p {}{}".format(sim_dir, run_dir_0)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     shutil.copy("sim.py", cwd + run_dir_0 + "sim.py")
     shutil.copy("sim.py", cwd + run_dir_1 + "sim.py")
-    
+
     shutil.copy("init.py", cwd + run_dir_0 + "init.py")
     shutil.copy("init.py", cwd + run_dir_1 + "init.py")
 
