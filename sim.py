@@ -131,8 +131,8 @@ if __name__ == "__main__":
     C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
     # 40 wt C = 2,000
     # 10 wt C = 1,667
-    #snap = my_init.init_system({A : 100, B : 200, C : 20}, 1)
-    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
+    snap = my_init.init_system({A : 100, B : 200, C : 20}, 1)
+    #snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
     system = hoomd.init.read_snapshot(snap)
 
     #Sys Parmas
@@ -175,6 +175,7 @@ if __name__ == "__main__":
     deprecated.dump.xml(group = hoomd.group.all(), filename =cwd + run_dir + "start.hoomdxml", all=True)
     hoomd.analyze.log(filename= cwd + run_dir + "out.log", quantities=["pair_dpd_energy","volume","momentum","potential_energy","kinetic_energy","temperature","pressure", "bond_harmonic_energy"], period=log_write, header_prefix='#', overwrite=True)
     dump.dcd(filename=cwd + run_dir +"traj.dcd", period=dcd_write, overwrite=True)
+    dump.gsd(filename= cwd + run_dir + "data.gsd", period=dcd_write, group = hoomd.group.all(), overwrite=True, static=['attribute'])
 
     nl = md.nlist.cell()
     dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=mix_kT, seed=0)
