@@ -29,7 +29,7 @@ def bond_test(kT, delta_e, bond_rank):
     # Devides by bond rank to make it less probable, add one to prvent rank 0
     # issues
     weight = 1
-    if bond_rank == 1:
+    if bond_rank >= 1:
         weight = 500
     if mb_stats/float(weight) > random.random():
         return True
@@ -149,17 +149,17 @@ if __name__ == "__main__":
 
     # BOND
     # Bond cut off
-    BOND = False
+    BOND = True
     bond_end_kT = 1.0
     if BOND == True:
         CUT = 1.0
         MAX_A_BONDS = 4
         MAX_B_BONDS = 2
         bond_period = 1e1
-        bond_time = 1e5 #float(run_name_postfix)
-        bond_end_kT = 1.0 #float(sys.argv[3])
+        #bond_time = 1e5 #float(run_name_postfix)
+        #bond_end_kT = 1.0 #float(sys.argv[3])
         bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
-        bond_time = 2e6 #bond_time*2
+        bond_time = 10e5 #bond_time*2
         elapsed_time += bond_time
         print("Number of bonding steps: {}".format(bond_time/bond_period))
 
