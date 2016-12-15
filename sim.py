@@ -28,7 +28,10 @@ def bond_test(kT, delta_e, bond_rank):
     mb_stats = np.exp(-delta_e/kT)
     # Devides by bond rank to make it less probable, add one to prvent rank 0
     # issues
-    if mb_stats/float(bond_rank+1) > random.random():
+    weight = 1
+    if bond_rank == 1:
+        weight = 500
+    if mb_stats/float(weight) > random.random():
         return True
     else:
         return False
@@ -94,7 +97,7 @@ def find_pair(timestep):
             indexB = p.tag
             bond_rank = get_bond_rank(indexB, snapshot)
             if bond_rank < MAX_B_BONDS:
-                delta_e = 1.0
+                delta_e = 0.1
                 kT = bond_kT
                 if bond_test(temp_log.query('temperature'), delta_e, bond_rank):
                     #bond_test
@@ -118,10 +121,10 @@ if __name__ == "__main__":
     # These will be in an infile somday
     hoomd.context.initialize()
     cwd = os.getcwd()
-    run_name_postfix = sys.argv[1]
-    run_name = sys.argv[2]
+    #run_name_postfix = sys.argv[1]
+    run_name = sys.argv[1]
     run_dir = "/"+run_name
-    print(run_name_postfix)
+    #print(run_name_postfix)
     print(run_dir)
     #end_eql_kT = float(run_name_postfix)
 
@@ -131,8 +134,8 @@ if __name__ == "__main__":
     C = my_init.PolyBead(btype="C", mass = 1.0, N = 10)
     # 40 wt C = 2,000
     # 10 wt C = 1,667
-    snap = my_init.init_system({A : 100, B : 200, C : 20}, 1)
-    #snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
+    #snap = my_init.init_system({A : 2000, B : 4000, C : 0}, 1)
+    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
     system = hoomd.init.read_snapshot(snap)
 
     #Sys Parmas
@@ -140,29 +143,31 @@ if __name__ == "__main__":
     dcd_write = 1e4
     elapsed_time = 0
     # MIX
-    mix_time = 1.4e6
+    mix_time = 1e6
     mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
     elapsed_time += mix_time
 
     # BOND
     # Bond cut off
-    BOND = True
-    CUT = 1.0
-    MAX_A_BONDS = 4
-    MAX_B_BONDS = 2
-    bond_period = 1e1
-    bond_time = float(run_name_postfix)
-    bond_end_kT = float(sys.argv[3])
-    bond_kT = hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
-    bond_time = bond_time*2
-    elapsed_time += bond_time
-    print("Number of bonding steps: {}".format(bond_time/bond_period))
+    BOND = False
+    bond_end_kT = 1.0
+    if BOND == True:
+        CUT = 1.0
+        MAX_A_BONDS = 4
+        MAX_B_BONDS = 2
+        bond_period = 1e1
+        bond_time = 1e5 #float(run_name_postfix)
+        bond_end_kT = 1.0 #float(sys.argv[3])
+        bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
+        bond_time = 2e6 #bond_time*2
+        elapsed_time += bond_time
+        print("Number of bonding steps: {}".format(bond_time/bond_period))
 
     # EQL
-    eql_time = 1.4e6
-    end_eql_kT = 1.0
-    eql_kT = hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
-    eql_time = eql_time*2
+    eql_time = 5e6
+    #end_eql_kT = float(sys.argv[3])
+    eql_kT = float(sys.argv[2])#hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
+    eql_time = 5e6
     elapsed_time += eql_time
     ###
 

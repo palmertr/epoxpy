@@ -28,8 +28,8 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run
     # This line assumes a 48hr wall clock time and may be commented out
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 48 * 3600 - 10 * 60))\n"
     job_string +="\n"
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, sys.argv[1], run_dir_0, sys.argv[2], sim_dir, run_dir_0)
-    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python {}sim.py {} {} {} --gpu=1 > {}{}job_1.o &\n".format(run_dir_0, sys.argv[3], run_dir_1, sys.argv[4], sim_dir, run_dir_1)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 0 python {}sim.py {} {} --gpu=0 > {}{}job_0.o &\n".format(run_dir_0, run_dir_0, sys.argv[1], sim_dir, run_dir_0)
+    job_string +="mpirun -np 1 --bind-to core --cpu-set 1 python {}sim.py {} {} --gpu=1 > {}{}job_1.o &\n".format(run_dir_1, run_dir_1, sys.argv[2], sim_dir, run_dir_1)
     job_string +="wait\n"
     job_string +="echo 'all done!'"
     return job_string
@@ -42,13 +42,13 @@ def write_job_string(job_string, run_dir):
 
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
-    job_time = "2-00:00:00"
+    job_time = "04:00:00"
     # This should be the folder that sim.py, init.py, and submit.py are in
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "bonding-ramp-b-time"
+    project_name = "test-msd-no-bonding"
     # This will be a sub folder in the sim_dir directory
-    run_dir_0 = "runs/{}-{}-bondkT-{}/".format(project_name, sys.argv[1], sys.argv[2])
-    run_dir_1 = "runs/{}-{}-bondkT-{}/".format(project_name, sys.argv[3], sys.argv[4])
+    run_dir_0 = "runs/{}-kT-{}/".format(project_name, sys.argv[1])
+    run_dir_1 = "runs/{}-kT-{}/".format(project_name, sys.argv[2])
 
     #make some dirs
     cmd = "mkdir -p {}{}".format(sim_dir, run_dir_0)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     cwd+= "/"
     #run_name = "dpdc_debug_bonding_p10g0_{}/".format(run_name_postfix)
-    job_string = slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim", run_dir_0=run_dir_0, run_dir_1 =  run_dir_1)
+    job_string = slurm_job(email, job_time, sim_dir, queue="quick", job_name="epoxy_sim", run_dir_0=run_dir_0, run_dir_1 =  run_dir_1)
     write_job_string(job_string, run_dir_0)
     write_job_string(job_string, run_dir_1)
 
