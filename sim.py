@@ -143,7 +143,7 @@ if __name__ == "__main__":
     dcd_write = 1e4
     elapsed_time = 0
     # MIX
-    mix_time = 1e6
+    mix_time = 1e4
     mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
     elapsed_time += mix_time
 
@@ -159,15 +159,14 @@ if __name__ == "__main__":
         #bond_time = 1e5 #float(run_name_postfix)
         #bond_end_kT = 1.0 #float(sys.argv[3])
         bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
-        bond_time = 10e5 #bond_time*2
+        bond_time = 1e3 #bond_time*2
         elapsed_time += bond_time
         print("Number of bonding steps: {}".format(bond_time/bond_period))
 
     # EQL
-    eql_time = 5e6
     #end_eql_kT = float(sys.argv[3])
     eql_kT = float(sys.argv[2])#hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
-    eql_time = 5e6
+    eql_time = 1e4
     elapsed_time += eql_time
     ###
 
