@@ -53,7 +53,9 @@ def pbc_diff(p1, p2, axes):
         dr[i] = abs(dr[i])
         if dr[i] > axes[i]*0.5:
             dr[i]-=axes[i]
-    return np.linalg.norm(dr)
+    #return np.linalg.norm(dr)
+    return np.sqrt(dr[0]**2+dr[1]**2+dr[2]**2)
+
 
 
 def find_pair(timestep):
@@ -80,32 +82,29 @@ def find_pair(timestep):
 
     if typeA == "A" and rank == MAX_A_BONDS:
         print("Can't bond it anymore")
-        return False
     elif typeA == "B" and rank == MAX_B_BONDS:
         print("Can't bond it anymore")
-        return False
 
     # If its mixed, it shouldn't be too bad to loop till we find one even if
     # we always start loop from indexA to indexA+1 % N_p
     # also this could be an info loop, yolo!
-    xyz0 = system.particles[indexA].position
-    axis = [system.box.Lx, system.box.Ly, system.box.Lz]
-    for p in group:
-        xyz1 = p.position
-        r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)
-        if r < CUT:
-            indexB = p.tag
-            bond_rank = get_bond_rank(indexB, snapshot)
-            if bond_rank < MAX_B_BONDS:
-                delta_e = 0.1
-                kT = bond_kT
-                if bond_test(temp_log.query('temperature'), delta_e, bond_rank):
-                    #bond_test
-                    make_bond(indexA, indexB, snapshot)
-                    print("Found one, bonding {} and {}".format(indexA, indexB))
-                    #print("Rank of A {} type of A {}".format(rank, typeA))
-                    #print("Rank of B {} type of B {}".format(bond_rank, typeB))
-                    return True
+    else:
+        xyz0 = system.particles[indexA].position
+        axis = [system.box.Lx, system.box.Ly, system.box.Lz]
+        for p in group:
+            xyz1 = p.position
+            r = pbc_diff(np.array(xyz0), np.array(xyz1), axis)
+            if r < CUT:
+                indexB = p.tag
+                bond_rank = get_bond_rank(indexB, snapshot)
+                if bond_rank < MAX_B_BONDS:
+                    delta_e = 0.1
+                    if bond_test(temp_log.query('temperature'), delta_e, bond_rank):
+                        #bond_test
+                        make_bond(indexA, indexB, snapshot)
+                        print("Found one, bonding {} and {}".format(indexA, indexB))
+                        #print("Rank of A {} type of A {}".format(rank, typeA))
+                        #print("Rank of B {} type of B {}".format(bond_rank, typeB))
 
 def get_system_mass():
     total_mass = 0
@@ -143,9 +142,19 @@ if __name__ == "__main__":
     dcd_write = 1e4
     elapsed_time = 0
     # MIX
-    mix_time = 1e4
+
+    time_scale = 5e3
+    t_scale = float(sys.argv[2])
+    mix_time = 1e5
     mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
-    elapsed_time += mix_time
+    #elapsed_time += mix_time
+    run_type = "A"
+    if run_type == "A":
+    #NO HOLD
+        run_kT = hoomd.variant.linear_interp(points = [(mix_time, 1.0*t_scale), (60*time_scale, 4.5*t_scale), (190*time_scale, 4.5*t_scale), (240*time_scale, 1.0*t_scale)])
+    #HOLD
+    if run_type == "B":
+        run_kT = hoomd.variant.linear_interp(points = [(mix_time, 1.0*t_scale), (50*time_scale, 4.0*t_scale), (120*time_scale, 4.0*t_scale), (140*time_scale, 4.5*t_scale), (270*time_scale, 4.5*t_scale), (320*time_scale, 1.0*t_scale)])
 
     # BOND
     # Bond cut off
@@ -158,16 +167,18 @@ if __name__ == "__main__":
         bond_period = 1e1
         #bond_time = 1e5 #float(run_name_postfix)
         #bond_end_kT = 1.0 #float(sys.argv[3])
-        bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
-        bond_time = 1e3 #bond_time*2
+        #bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
+        bond_time = 2e5 #bond_time*2
         elapsed_time += bond_time
         print("Number of bonding steps: {}".format(bond_time/bond_period))
+    else:
+        bond_time = 0
 
     # EQL
     #end_eql_kT = float(sys.argv[3])
-    eql_kT = float(sys.argv[2])#hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
-    eql_time = 1e4
-    elapsed_time += eql_time
+    #eql_kT = float(sys.argv[2])#hoomd.variant.linear_interp(points = [(elapsed_time, bond_end_kT), (eql_time+elapsed_time, end_eql_kT), (eql_time*2+elapsed_time, end_eql_kT)])
+    #eql_time = 1e5
+    #elapsed_time += eql_time
     ###
 
 
@@ -200,10 +211,10 @@ if __name__ == "__main__":
     md.integrate.nve(group=hoomd.group.all())
     hoomd.run(mix_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd + run_dir +"mix.hoomdxml", all=True)
-
+    dpd.set_params(kT = run_kT)
     # Now we bond!
     if BOND is True:
-        dpd.set_params(kT = bond_kT)
+        #dpd.set_params(kT = bond_kT)
         bond_callback = hoomd.analyze.callback(callback = find_pair, period = bond_period)
         temp_log = hoomd.analyze.log(filename=None, quantities=["temperature"], period = bond_period)
         hoomd.run(bond_time)
@@ -211,8 +222,13 @@ if __name__ == "__main__":
         temp_log.disable()
         deprecated.dump.xml(group = hoomd.group.all(), filename =cwd +run_dir + "bond.hoomdxml", all=True)
     # Now we run to eql
-    dpd.set_params(kT = eql_kT)
+    #dpd.set_params(kT = eql_kT)
     deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
-    hoomd.run(eql_time)
+    #NO HOLD
+    if run_type == "A":
+        hoomd.run(240*time_scale-bond_time)
+    #HOLD
+    if run_type == "B":
+        hoomd.run(320*time_scale-bond_time)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")

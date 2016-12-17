@@ -12,7 +12,7 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"): #,
     job_string +="#SBATCH -p {}\n".format(queue)
     job_string +="#SBATCH -J {}\n".format(job_name)
     job_string +="#SBATCH -N 1\n"
-    job_string +="#SBATCH -n 16\n"
+    job_string +="#SBATCH -n 20\n"
     job_string +="#SBATCH -o {}{}main.o\n".format(sim_dir, run_dir_0)
     job_string +="#SBATCH --mail-type=All\n"
     job_string +="#SBATCH --mail-user={}\n".format(email)
@@ -58,10 +58,10 @@ def write_job_string(job_string, run_dir):
 
 if __name__ == "__main__":
     email = "mikehenry@boisestate.edu"
-    job_time = "00:30:00"
+    job_time = "06:00:00"
     # This should be the folder that sim.py, init.py, and submit.py are in
     sim_dir = "/cstor/xsede/projects/p-dmr140097/mike_epoxy_sim/"
-    project_name = "msd-bonding-1e3"
+    project_name = "msd-bonding-2e5-bmark-A"
     # This will be a sub folder in the sim_dir directory
     run_dir_0 = "runs/{}-kT-{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}-kT-{}/".format(project_name, sys.argv[2])
