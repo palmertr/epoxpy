@@ -143,7 +143,7 @@ if __name__ == "__main__":
     elapsed_time = 0
     # MIX
 
-    time_scale = 5e3
+    time_scale = 7e3
     t_scale = float(sys.argv[2])
     mix_time = 1e5
     mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         #bond_time = 1e5 #float(run_name_postfix)
         #bond_end_kT = 1.0 #float(sys.argv[3])
         #bond_kT = float(sys.argv[2]) #hoomd.variant.linear_interp(points = [(elapsed_time, 1.0), (bond_time+elapsed_time, bond_end_kT), (bond_time*2+elapsed_time, bond_end_kT)])
-        bond_time = 2e5 #bond_time*2
+        bond_time = (240*7e3) #bond_time*2
         elapsed_time += bond_time
         print("Number of bonding steps: {}".format(bond_time/bond_period))
     else:
@@ -226,9 +226,9 @@ if __name__ == "__main__":
     deprecated.analyze.msd(groups=[groupA, groupB, groupC], period=log_write, filename= cwd + run_dir + "msd.log", header_prefix='#')
     #NO HOLD
     if run_type == "A":
-        hoomd.run(240*time_scale-bond_time)
+        hoomd.run(2e6)
     #HOLD
     if run_type == "B":
-        hoomd.run(320*time_scale-bond_time)
+        hoomd.run(2e6)
     deprecated.dump.xml(group = hoomd.group.all(), filename = cwd +run_dir +"final.hoomdxml", all=True)
     print("sim fin")
