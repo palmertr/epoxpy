@@ -64,10 +64,10 @@ if __name__ == "__main__":
     # This should be the folder that sim.py, init.py, and submit.py are in
     #sim_dir = "/cstor/xsede/projects/p-dmr140097/mike_epoxy_sim/"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "A-bonding-long-run"
+    project_name = "benchmak"
     # This will be a sub folder in the sim_dir directory
-    run_dir_0 = "runs/{}-kT-{}/".format(project_name, sys.argv[1])
-    run_dir_1 = "runs/{}-kT-{}/".format(project_name, sys.argv[2])
+    run_dir_0 = "runs/{}-Nmul-{}/".format(project_name, sys.argv[1])
+    run_dir_1 = "runs/{}-Nmul-{}/".format(project_name, sys.argv[2])
    # run_dir_2 = "runs/{}-kT-{}/".format(project_name, sys.argv[3])
    # run_dir_3 = "runs/{}-kT-{}/".format(project_name, sys.argv[4])
    # run_dir_4 = "runs/{}-kT-{}/".format(project_name, sys.argv[5])

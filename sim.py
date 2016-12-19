@@ -134,7 +134,8 @@ if __name__ == "__main__":
     # 40 wt C = 2,000
     # 10 wt C = 1,667
     #snap = my_init.init_system({A : 2000, B : 4000, C : 0}, 1)
-    snap = my_init.init_system({A : 10000, B : 20000, C : 2000}, 1)
+    N_mult = int(sys.argv[2])
+    snap = my_init.init_system({A : 10000*N_mult, B : 20000*N_mult, C : 2000*N_mult}, 1)
     system = hoomd.init.read_snapshot(snap)
 
     #Sys Parmas
@@ -145,9 +146,9 @@ if __name__ == "__main__":
 
     time_scale = 7e3
     t_scale = float(sys.argv[2])
-    mix_time = 1e5
-    mix_kT = hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
-    #elapsed_time += mix_time
+    mix_time = 1e6
+    mix_kT = 1.0 #hoomd.variant.linear_interp(points = [(0, 5.0), (mix_time, 5.0)])
+    elapsed_time += mix_time
     run_type = "A"
     if run_type == "A":
     #NO HOLD
@@ -158,7 +159,7 @@ if __name__ == "__main__":
 
     # BOND
     # Bond cut off
-    BOND = True
+    BOND = False
     bond_end_kT = 1.0
     if BOND == True:
         CUT = 1.0
