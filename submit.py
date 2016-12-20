@@ -25,7 +25,7 @@ def slurm_job(email, job_time, sim_dir, queue="batch", job_name="epoxy_sim"): #,
     #job_string +="module use /home/xsede/projects/p-dmr140097/mike/mod/modulefiles\n"
     #job_string +="module load hoomd2.1.1-80-gc62a2fc\n"
     job_string +="module use /scratch/erjank_project/mike_modules/modulefiles/\n"
-    job_string +="module load hoomd/2.1.0\n"
+    job_string +="module load hoomd/2.1.0-sp\n"
     job_string +="cd {}\n".format(sim_dir)
     # This line assumes a 48hr wall clock time and may be commented out
     job_string +="export HOOMD_WALLTIME_STOP=$((`date +%s` + 48 * 3600 - 10 * 60))\n"
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # This should be the folder that sim.py, init.py, and submit.py are in
     #sim_dir = "/cstor/xsede/projects/p-dmr140097/mike_epoxy_sim/"
     sim_dir = "/scratch/erjank_project/mike_epoxy_sim/"
-    project_name = "benchmak"
+    project_name = "benchmak-single"
     # This will be a sub folder in the sim_dir directory
     run_dir_0 = "runs/{}-Nmul-{}/".format(project_name, sys.argv[1])
     run_dir_1 = "runs/{}-Nmul-{}/".format(project_name, sys.argv[2])
