@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from hoomd import variant
+import matplotlib.pyplot as plt
 
 
 class TemperatureProfileBuilder(object):
@@ -17,6 +18,17 @@ class TemperatureProfileBuilder(object):
         """
         pass
 
+    def get_figure(self):
+        fig = plt.figure()
+        x_val = [x[0] for x in self.temperature_profile]
+        y_val = [x[1] for x in self.temperature_profile]
+
+        plt.xlabel('Time')
+        plt.ylabel('kT')
+        plt.plot(x_val, y_val)
+        plt.plot(x_val, y_val, 'or')
+        return fig
+
 
 class LinearTemperatureProfileBuilder(TemperatureProfileBuilder):
     """Builds a Linear Temperature Profile."""
@@ -29,18 +41,18 @@ class LinearTemperatureProfileBuilder(TemperatureProfileBuilder):
         """
             Add a state point for the linear temperature profile. Adds ramp time to previous time or initial_time
         """
-        print('Adding state point to LinearTemperatureProfileBuilder')
         last_state_point = self.temperature_profile[-1]
         new_state_point = ((last_state_point[0]+ramp_time), desired_temperature)
         if new_state_point[0] > last_state_point[0]:
             self.temperature_profile.append(new_state_point)
         else:
-            err_string = 'Inconsistent state point added. Previous time: {}, new time: {}'.format(last_state_point[0], new_state_point[0])
+            err_string = 'Inconsistent state point added. Previous time: {}, new time: {}'.format(last_state_point[0],
+                                                                                                  new_state_point[0])
             raise ValueError(err_string)
-        print('Added new state point to LinearTemperatureProfile: {}'.format(self.temperature_profile))
 
     def get_profile(self):
         """
             Returns a hoomd.variant object
         """
-        return variant.linear_interp(points=self.temperature_profile)
+        profile = variant.linear_interp(points=self.temperature_profile)
+        return profile

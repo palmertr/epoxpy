@@ -4,12 +4,24 @@ from hoomd import deprecated
 from hoomd import md
 
 
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+
 class HOOMDEngine(MdEngine):
 
     def __init__(self, dt=1e-2):
         MdEngine.__init__(self, 'HOOMD')
         self.dt = dt
-        hoomd.context.initialize()
+        if run_from_ipython():
+            print('Initializing HOOMD in ipython')
+            hoomd.context.initialize('--mode=cpu')
+        else:
+            hoomd.context.initialize()
         print('HOOMDEngine initialized.')
 
     def set_initial_structure(self, initial_structure):
