@@ -28,6 +28,11 @@ pip install .
 ```
 python test_simulation.py
 ```
+Alternatively, if you just want to use epoxpy, run the following command
+```
+pip install -e git+ssh://git@bitbucket.org/cmelab/epoxy_sim.git@SimlationClass#egg=epoxpy --user
+```
+and import epoxpy.
 
 ### Who do I talk to? ###
 
