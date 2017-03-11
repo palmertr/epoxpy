@@ -8,7 +8,7 @@
 
 ### How do I get set up? ###
 
-*Install miniconda using instructions [here](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements).
+* Install miniconda using instructions [here](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements).
 
 * Clone the epoxpy repository and navigate into the folder
 ```
