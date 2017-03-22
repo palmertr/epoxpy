@@ -2,7 +2,7 @@ import mbuild as mb
 
 
 class A(mb.Compound):
-    """An A particle with two ports one facing up and one facing down."""
+    """An coarse grained particle called A(arbitrarily) with two ports one facing up and one facing down."""
     def __init__(self):
         super(A, self).__init__()
 

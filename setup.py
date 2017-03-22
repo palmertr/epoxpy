@@ -14,6 +14,8 @@ setup(name='epoxpy',
         package_dir={'epoxpy':'epoxpy'},
         install_requires=[
             'numpy',
-            'matplotlib', 'mbuild',
+            'matplotlib',
+            'mbuild',
+            'pytest'
         ],
         zip_safe=False)
