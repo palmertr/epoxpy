@@ -1,4 +1,7 @@
-from setuptools import setup
+from __future__ import print_function
+
+
+from setuptools import setup, find_packages
 
 setup(name='epoxpy',
         version='0.1',
@@ -7,9 +10,10 @@ setup(name='epoxpy',
         author='cmelab',
         author_email='stephenthomas1@boisestate.edu',
         license='MIT',
-        packages=['epoxpy'],
+        packages=find_packages(),
+        package_dir={'epoxpy':'epoxpy'},
         install_requires=[
             'numpy',
-            'matplotlib',
+            'matplotlib', 'mbuild',
         ],
         zip_safe=False)
