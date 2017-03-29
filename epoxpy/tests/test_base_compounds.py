@@ -1,7 +1,6 @@
 import mbuild as mb
 from epoxpy.tests.base_test import BaseTest
 import numpy as np
-import pytest
 
 
 class TestBaseCompounds(BaseTest):
