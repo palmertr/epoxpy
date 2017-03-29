@@ -39,3 +39,7 @@ class TestBaseCompounds(BaseTest):
         compound.add([a, b, c10])
         assert compound.n_particles == 1 + 1 + 10
         assert compound.n_bonds == 0 + 0 + 9
+
+    def test_epoxy_blend_10a_20b_2c10(self, epoxy_a_10_b_20_c10_2_blend):
+        assert epoxy_a_10_b_20_c10_2_blend.n_bonds == 18
+        assert epoxy_a_10_b_20_c10_2_blend.n_particles == 50

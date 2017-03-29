@@ -28,6 +28,11 @@ class BaseTest:
         return C10(rotate_random=False)
 
     @pytest.fixture
+    def epoxy_a_10_b_20_c10_2_blend(self):
+        from epoxpy.lib import Epoxy_A_10_B_20_C10_2_Blend
+        return Epoxy_A_10_B_20_C10_2_Blend()
+
+    @pytest.fixture
     def c10_new_position(self):
         from epoxpy.lib import C10
         return C10(c1_pos=[10, 0, 0], rotate_random=False)
