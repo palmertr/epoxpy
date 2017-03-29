@@ -25,12 +25,12 @@ class BaseTest:
     @pytest.fixture
     def c10(self):
         from epoxpy.lib import C10
-        return C10()
+        return C10(rotate_random=False)
 
     @pytest.fixture
     def c10_new_position(self):
         from epoxpy.lib import C10
-        return C10([10, 0, 0])
+        return C10(c1_pos=[10, 0, 0], rotate_random=False)
 
     @pytest.fixture
     def c10_ref_xyz(self):
