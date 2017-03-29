@@ -111,7 +111,6 @@ dependencies:
   - backports-abc==0.5
   - backports.shutil-get-terminal-size==1.0.0
   - backports.ssl-match-hostname==3.4.0.2
-  - cme-utils==0.1
   - ipython-genutils==0.1.0
   - jupyter-client==5.0.0
   - jupyter-console==5.1.0
