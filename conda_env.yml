@@ -17,7 +17,6 @@ dependencies:
 - decorator=4.0.11=py27_0
 - entrypoints=0.2.2=py27_1
 - enum34=1.1.6=py27_0
-- freetype=2.6.3=1
 - functools32=3.2.3.2=py27_0
 - html5lib=0.999=py27_0
 - ipykernel=4.5.2=py27_0
@@ -31,7 +30,6 @@ dependencies:
 - jupyter_core=4.3.0=py27_0
 - libffi=3.2.1=3
 - libsodium=1.0.10=0
-- matplotlib=2.0.0=np110py27_0
 - mistune=0.7.3=py27_1
 - nbconvert=5.1.1=py27_0
 - notebook=4.3.1=py27_0
@@ -65,12 +63,14 @@ dependencies:
 - zlib=1.2.8=3
 - backports=1.0=py27_0
 - bcrypt=3.1.3=py27_0
+- freetype=2.5.5=2
 - get_terminal_size=1.0.0=py27_0
 - icu=54.1=0
 - jupyter=1.0.0=py27_3
 - libgcc=4.8.5=1
 - libpng=1.6.27=0
 - markupsafe=0.23=py27_2
+- matplotlib=1.5.1=np110py27_0
 - mkl=2017.0.1=0
 - nbformat=4.3.0=py27_0
 - numpy=1.10.2=py27_0
@@ -82,9 +82,9 @@ dependencies:
 - pip=9.0.1=py27_1
 - ply=3.10=py27_0
 - pyparsing=2.1.4=py27_0
-- pyqt=5.6.0=py27_2
-- qt=5.6.2=0
-- qtconsole=4.2.1=py27_1
+- pyqt=4.11.4=py27_4
+- qt=4.8.7=4
+- qtconsole=4.2.1=py27_0
 - readline=6.2=2
 - scandir=1.5=py27_0
 - scipy=0.16.0=np110py27_1
@@ -112,8 +112,6 @@ dependencies:
   - backports.shutil-get-terminal-size==1.0.0
   - backports.ssl-match-hostname==3.4.0.2
   - cme-utils==0.1
-  - epoxpy (/Users/stephenthomas/projects/epoxy_sim)==0.1
-  - epoxy-sim==0.1
   - ipython-genutils==0.1.0
   - jupyter-client==5.0.0
   - jupyter-console==5.1.0

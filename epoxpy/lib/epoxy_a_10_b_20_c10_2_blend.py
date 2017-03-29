@@ -1,4 +1,3 @@
-import numpy as np
 from numpy import random
 import mbuild as mb
 from epoxpy.lib import A, B, C10

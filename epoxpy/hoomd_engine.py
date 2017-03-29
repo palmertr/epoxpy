@@ -27,6 +27,14 @@ class HOOMDEngine(MdEngine):
     def set_initial_structure(self, initial_structure):
         hoomd.init.read_snapshot(initial_structure)
 
+    @staticmethod
+    def read_initial_struct_from_file(file_name):
+        if file_name.endswith('.hoomdxml'):
+            system = hoomd.deprecated.init.read_xml(file_name)
+        elif file_name.endswith('.gsd'):
+            system = hoomd.init.read_gsd(file_name)
+        return system
+
     def run_initial_structure(self, mix_time, output_dir):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())

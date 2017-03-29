@@ -1,10 +1,11 @@
 import os
 from simulation import Simulation
-import init as my_init
 import hoomd
 from hoomd import md
 from hoomd import deprecated
 from hoomd import dump
+from epoxpy.lib import A, B, C, Epoxy_A_10_B_20_C10_2_Blend
+import mbuild as mb
 
 
 class EpoxySimulation(Simulation):
@@ -31,7 +32,7 @@ class EpoxySimulation(Simulation):
     """
     engine_name = 'HOOMD'
 
-    def __init__(self, sim_name, mix_time, md_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
+    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c=2, n_mul=1.0, output_dir=os.getcwd()):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
@@ -39,7 +40,10 @@ class EpoxySimulation(Simulation):
         self.mix_time = mix_time
         self.output_dir = output_dir+"/"+sim_name+"/"
         self.mix_kT = mix_kt
-        self.md_time = md_time
+        final_time = temp_prof.get_total_sim_time()
+        md__total_time = final_time - mix_time
+        self.md_time = md__total_time
+        print('md time: {}'.format(self.md_time))
         self.temp_prof = temp_prof
         self.log_write = log_write
         self.dcd_write = dcd_write
@@ -55,14 +59,24 @@ class EpoxySimulation(Simulation):
     def get_sim_name(self):
         return self.simulation_name
 
-    def get_initial_structure(self):
-        # Init System
-        A = my_init.Bead()
-        B = my_init.Bead(btype="B", mass=1.0)
-        C = my_init.PolyBead(btype="C", mass=1.0, N=10)
-        snap = my_init.init_system({A: int(self.num_a * self.n_mult), B: int(self.num_b * self.n_mult),
-                                    C: int(self.num_c * self.n_mult)}, 1)
-        return snap
+    def set_initial_structure(self):
+        blend = Epoxy_A_10_B_20_C10_2_Blend()
+        mix_box = mb.packing.fill_box(blend, self.n_mult, box=[3, 3, 3])
+        file_name = 'initial.gsd'
+        if file_name.endswith('.hoomdxml'):
+            mix_box.save(file_name)
+        elif file_name.endswith('.gsd'):
+            mix_box.save(file_name, write_ff=False)
+
+        system = self.engine.read_initial_struct_from_file(file_name)
+        for p_id in range(len(system.particles)):
+            p = system.particles[p_id]
+            if p.type is 'A':
+                p.mass = A.mass
+            if p.type is 'B':
+                p.mass = B.mass
+            if p.type is 'C':
+                p.mass = C.mass
 
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
@@ -81,7 +95,9 @@ class EpoxySimulation(Simulation):
 
     def initialize(self):
         print('Initializing {}'.format(self.simulation_name))
-        self.engine.set_initial_structure(self.get_initial_structure())
+        #self.engine.set_initial_structure(self.get_initial_structure())
+        self.set_initial_structure()
+
         # Mix Step/MD Setup
         self.group_a = hoomd.group.type(name='a-particles', type='A')
         self.group_b = hoomd.group.type(name='b-particles', type='B')
@@ -99,8 +115,9 @@ class EpoxySimulation(Simulation):
         self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
 
         self.harmonic = md.bond.harmonic()
-        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+        # 0 for C-C bond. We know its assigned a bond id 0 from the hoomdxml file saved by mbuild
+        self.harmonic.bond_coeff.set('0', k=100.0, r0=1.0)
+        self.harmonic.bond_coeff.set('1', k=100.0, r0=1.0)
 
         self.configure_outputs()
         self.engine.run_initial_structure(self.mix_time, self.output_dir)
@@ -113,8 +130,13 @@ class EpoxySimulation(Simulation):
                                filename=self.output_dir + "msd.log", header_prefix='#')
         self.engine.run_md(self.md_time, self.output_dir)
 
+    def output(self):
+        import numpy as np
+        data = np.genfromtxt(fname=self.output_dir + "out.log",skip_header=True)
+
     def execute(self):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()
         self.run()
+        self.output()
         print("sim fin")

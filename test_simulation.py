@@ -19,8 +19,8 @@ fig = type_A_md_temp_profile.get_figure()
 #plt.show()
 fig.savefig("type_A_temp_profile.png")
 
-myEpoxySim = es.EpoxySimulation('epoxy_test1', mix_time=mix_time, mix_kt=mix_kt, md_time=md_time,
-                             temp_prof=type_A_md_temp_profile, n_mul=1.0)
+myEpoxySim = es.EpoxySimulation('epoxy_test_mbuild', mix_time=mix_time, mix_kt=mix_kt,
+                                temp_prof=type_A_md_temp_profile, n_mul=1.0)
 
 mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
 mySingleJobForEpoxy.execute()

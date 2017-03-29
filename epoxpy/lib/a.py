@@ -3,6 +3,8 @@ import mbuild as mb
 
 class A(mb.Compound):
     """An coarse grained particle called A(arbitrarily) with two ports one facing up and one facing down."""
+    mass = 1.0
+
     def __init__(self):
         super(A, self).__init__()
 

@@ -25,9 +25,14 @@ class TemperatureProfileBuilder(object):
 
         plt.xlabel('Time')
         plt.ylabel('kT')
+        plt.margins(x=0.1, y=0.1)
         plt.plot(x_val, y_val)
         plt.plot(x_val, y_val, 'or')
         return fig
+
+    def get_total_sim_time(self):
+        last_state_point = self.temperature_profile[-1]
+        return last_state_point[0]
 
 
 class LinearTemperatureProfileBuilder(TemperatureProfileBuilder):
@@ -43,11 +48,11 @@ class LinearTemperatureProfileBuilder(TemperatureProfileBuilder):
         """
         last_state_point = self.temperature_profile[-1]
         new_state_point = ((last_state_point[0]+ramp_time), desired_temperature)
-        if new_state_point[0] > last_state_point[0]:
+        if new_state_point[0] >= last_state_point[0]:
             self.temperature_profile.append(new_state_point)
         else:
-            err_string = 'Inconsistent state point added. Previous time: {}, new time: {}'.format(last_state_point[0],
-                                                                                                  new_state_point[0])
+            err_string = 'Inconsistent state point added. The new time should be greater or equal to previous time.' \
+                         'Previous time: {}, new time: {}'.format(last_state_point[0], new_state_point[0])
             raise ValueError(err_string)
 
     def get_profile(self):

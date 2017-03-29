@@ -22,10 +22,10 @@ class C10(mb.Compound):
         rotates the first particle randomly if set to True
 
         """
+    mass = 10.0
 
     def __init__(self, c1_pos=None, rotate_random=True):
         super(C10, self).__init__()
-
         num_particles = 10
         for index in range(num_particles):
             self.add(C(), label='C[$]')
