@@ -1,4 +1,4 @@
-from numpy import random
+import random
 import math
 import mbuild as mb
 from epoxpy.lib import C

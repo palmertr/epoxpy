@@ -42,3 +42,26 @@ class TestBaseCompounds(BaseTest):
     def test_epoxy_blend_10a_20b_2c10(self, epoxy_a_10_b_20_c10_2_blend):
         assert epoxy_a_10_b_20_c10_2_blend.n_bonds == 18
         assert epoxy_a_10_b_20_c10_2_blend.n_particles == 50
+
+    def test_epoxy_sim_wo_bonding(self):
+        import epoxpy.epoxy_simulation as es
+        import epoxpy.job as jb
+        import epoxpy.temperature_profile_builder as tpb
+        import random
+
+        random.seed(1020)
+        print('\n# Test1: Running the simulation in a single job')
+        mix_time = 3e4
+        mix_kt = 2.0
+        time_scale = 1
+        temp_scale = 1
+        type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
+        type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
+        type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
+        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+
+        myEpoxySim = es.EpoxySimulation('epoxy_test_mbuild', mix_time=mix_time, mix_kt=mix_kt,
+                                        temp_prof=type_A_md_temp_profile, n_mul=1.0)
+
+        mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
+        mySingleJobForEpoxy.execute()
