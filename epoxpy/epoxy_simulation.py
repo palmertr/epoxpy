@@ -1,5 +1,6 @@
 import os
 from simulation import Simulation
+from bonding import Bonding
 import hoomd
 from hoomd import md
 from hoomd import deprecated
@@ -29,16 +30,20 @@ class EpoxySimulation(Simulation):
        num_C    : number of C particles created.
        n_mul    : multiplying factor for the number of A, B and C particles to be created.
        output_dir: default is the working directory
+       bond     : boolean value denoting whether to run the bonding routine for A's and B's
+       bond_period: time interval between calls to the bonding routine
     """
     engine_name = 'HOOMD'
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
-                 num_c=2, n_mul=1.0, output_dir=os.getcwd()):
+                 num_c=2, n_mul=1.0, output_dir=os.getcwd(), bond=False, bond_period=1e1):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.n_mult = n_mul
         self.mix_time = mix_time
         self.output_dir = output_dir+"/"+sim_name+"/"
+        self.bond = bond
+        self.bond_period = bond_period
         self.mix_kT = mix_kt
         final_time = temp_prof.get_total_sim_time()
         md__total_time = final_time - mix_time
@@ -55,6 +60,7 @@ class EpoxySimulation(Simulation):
         self.group_a = None
         self.group_b = None
         self.group_c = None
+        self.system = None
 
     def get_sim_name(self):
         return self.simulation_name
@@ -68,15 +74,27 @@ class EpoxySimulation(Simulation):
         elif file_name.endswith('.gsd'):
             mix_box.save(file_name, write_ff=False)
 
-        system = self.engine.read_initial_struct_from_file(file_name)
-        for p_id in range(len(system.particles)):
-            p = system.particles[p_id]
-            if p.type is 'A':
-                p.mass = A.mass
-            if p.type is 'B':
-                p.mass = B.mass
-            if p.type is 'C':
-                p.mass = C.mass
+        if file_name.endswith('.hoomdxml'):
+            self.system = hoomd.deprecated.init.read_xml(file_name)
+        elif file_name.endswith('.gsd'):
+            self.system = hoomd.init.read_gsd(file_name)
+
+        print('Initial box dimension: {}'.format(self.system.box.dimensions))
+
+        snapshot = self.system.take_snapshot(bonds=True)
+        for p_id in range(snapshot.particles.N):
+            p_types = snapshot.particles.types
+            p_type = p_types[snapshot.particles.typeid[p_id]]
+            if p_type == 'A':
+                snapshot.particles.mass[p_id] = A.mass
+            if p_type == 'B':
+                snapshot.particles.mass[p_id] = B.mass
+            if p_type == 'C':
+                snapshot.particles.mass[p_id] = C.mass
+        print(snapshot.bonds.types)
+        snapshot.bonds.types = ['C-C', 'A-B']
+        self.system.restore_snapshot(snapshot)
+        self.system.bonds.add('A-B', 1, 15)
 
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
@@ -91,7 +109,7 @@ class EpoxySimulation(Simulation):
                           header_prefix='#', overwrite=True)
         dump.dcd(filename=self.output_dir + "traj.dcd", period=self.dcd_write, overwrite=True)
         dump.gsd(filename=self.output_dir + "data.gsd", period=self.dcd_write, group=hoomd.group.all(), overwrite=True,
-                 static=['attribute'])
+                 static=['attribute', 'topology'])
 
     def initialize(self):
         print('Initializing {}'.format(self.simulation_name))
@@ -116,8 +134,8 @@ class EpoxySimulation(Simulation):
 
         self.harmonic = md.bond.harmonic()
         # 0 for C-C bond. We know its assigned a bond id 0 from the hoomdxml file saved by mbuild
-        self.harmonic.bond_coeff.set('0', k=100.0, r0=1.0)
-        self.harmonic.bond_coeff.set('1', k=100.0, r0=1.0)
+        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
         self.configure_outputs()
         self.engine.run_initial_structure(self.mix_time, self.output_dir)
@@ -128,7 +146,17 @@ class EpoxySimulation(Simulation):
         self.dpd.set_params(kT=self.temp_prof.get_profile())
         deprecated.analyze.msd(groups=[self.group_a, self.group_b, self.group_c], period=self.log_write,
                                filename=self.output_dir + "msd.log", header_prefix='#')
+
+        if self.bond is True:
+            log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
+            bonding_callback = Bonding(system=self.system, epoxy_sim=self, log=log)
+            bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
+
         self.engine.run_md(self.md_time, self.output_dir)
+
+        if self.bond is True:
+            bond_callback.disable()
+            log.disable()
 
     def output(self):
         import numpy as np
