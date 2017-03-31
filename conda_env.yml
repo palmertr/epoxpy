@@ -119,5 +119,4 @@ dependencies:
   - py==1.4.33
   - pytest==3.0.7
   - slurmpy==0.0.7
-prefix: /Users/stephenthomas/miniconda3/envs/epoxy_sim
 
