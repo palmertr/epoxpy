@@ -1,7 +1,7 @@
 name: epoxy_sim
 channels:
-- omnia
 - mosdef
+- omnia
 - conda-forge
 - glotzer
 - defaults
@@ -25,6 +25,7 @@ dependencies:
 - ipywidgets=5.2.2=py27_1
 - jinja2=2.9.5=py27_0
 - jsonschema=2.5.1=py27_0
+- jupyter=1.0.0=py27_0
 - jupyter_client=5.0.0=py27_0
 - jupyter_console=5.1.0=py27_0
 - jupyter_core=4.3.0=py27_0
@@ -46,7 +47,9 @@ dependencies:
 - python-dateutil=2.6.0=py27_0
 - pytz=2016.10=py27_0
 - pyzmq=16.0.2=py27_0
+- qtconsole=4.2.1=py27_0
 - setuptools=27.2.0=py27_0
+- signac=0.7.1=py27_0
 - singledispatch=3.4.0.3=py27_0
 - sip=4.18=py27_0
 - six=1.10.0=py27_0
@@ -63,10 +66,11 @@ dependencies:
 - zlib=1.2.8=3
 - backports=1.0=py27_0
 - bcrypt=3.1.3=py27_0
+- boost=1.61.0=py27_0
+- cython=0.25.2=py27_0
 - freetype=2.5.5=2
 - get_terminal_size=1.0.0=py27_0
 - icu=54.1=0
-- jupyter=1.0.0=py27_3
 - libgcc=4.8.5=1
 - libpng=1.6.27=0
 - markupsafe=0.23=py27_2
@@ -84,7 +88,6 @@ dependencies:
 - pyparsing=2.1.4=py27_0
 - pyqt=4.11.4=py27_4
 - qt=4.8.7=4
-- qtconsole=4.2.1=py27_0
 - readline=6.2=2
 - scandir=1.5=py27_0
 - scipy=0.16.0=np110py27_1
@@ -92,10 +95,11 @@ dependencies:
 - ssl_match_hostname=3.4.0.2=py27_1
 - tk=8.5.18=0
 - widgetsnbextension=1.2.6=py27_0
+- freud=0.6.2=py27_0
 - gsd=1.2.0=py27_1
 - hoomd=2.1.3=py27_0
 - networkx=1.10=py27_0
-- signac=0.7.1=py27_0
+- tbb=4.4.0=2
 - foyer=0.2.3=py_0
 - mbuild=0.6.1=py27_0
 - nglview=0.6.2.2=py_1
