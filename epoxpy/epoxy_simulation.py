@@ -36,7 +36,7 @@ class EpoxySimulation(Simulation):
     engine_name = 'HOOMD'
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
-                 num_c=2, n_mul=1.0, output_dir=os.getcwd(), bond=False, bond_period=1e1):
+                 num_c=2, n_mul=1.0, output_dir=os.getcwd(), bond=False, bond_period=1e1, box=[3, 3, 3]):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.n_mult = n_mul
@@ -55,6 +55,7 @@ class EpoxySimulation(Simulation):
         self.num_a = num_a
         self.num_b = num_b
         self.num_c = num_c
+        self.box = box
         self.dpd = None
         self.harmonic = None
         self.group_a = None
@@ -67,7 +68,7 @@ class EpoxySimulation(Simulation):
 
     def set_initial_structure(self):
         blend = Epoxy_A_10_B_20_C10_2_Blend()
-        mix_box = mb.packing.fill_box(blend, self.n_mult, box=[3, 3, 3])
+        mix_box = mb.packing.fill_box(blend, self.n_mult, box=self.box, overlap=0.050)
         file_name = 'initial.gsd'
         if file_name.endswith('.hoomdxml'):
             mix_box.save(file_name)

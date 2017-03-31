@@ -1,5 +1,9 @@
 import random
 import numpy as np
+from freud import parallel
+from freud import box, locality
+import time
+
 
 class Bonding:
     CUT = 1.0
@@ -10,6 +14,7 @@ class Bonding:
         self.system = system
         self.epoxy_sim = epoxy_sim
         self.log = log
+        parallel.setNumThreads(4)
 
     def __call__(self, step):
         self.find_pair(step)
@@ -51,24 +56,73 @@ class Bonding:
         if bond_from_rank < bond_from_max_rank:
             xyz0 = snapshot.particles.position[bond_from_idx]
             axis = [snapshot.box.Lx, snapshot.box.Ly, snapshot.box.Lz]
-            for p in bond_to_group:
-                xyz1 = p.position
-                r = self.pbc_diff(np.array(xyz0), np.array(xyz1), axis)
-                if r < self.CUT:
-                    bond_to_idx = p.tag
-                    bond_to_rank = self.get_bond_rank(bond_to_idx, snapshot)
+
+            start_time = time.time()
+            #made_bonds = self.find_neighbours_and_bond(axis, bond_from_idx, bond_from_type, bond_to_group, bond_to_max_rank,
+            #                              bond_to_type, snapshot, xyz0)
+
+            made_bonds = self.find_neighbours_and_bond_using_frued(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
+                                                      snapshot)
+            stop_time = time.time()
+            # print("time to calc neighbours for 1 frame = {}".format(stop_time - start_time))
+            if made_bonds is True:
+                self.system.restore_snapshot(snapshot)
+        else:
+            print("Can't bond it anymore")
+
+    def find_neighbours_and_bond_using_frued(self, bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
+                                             snapshot):
+        made_bonds = False
+        # create freud nearest neighbor object
+        # set number of neighbors
+        n_neigh = 6
+        # create freud nearest neighbors object
+        nn = locality.NearestNeighbors(rmax=self.CUT, n_neigh=n_neigh, strict_cut=True)
+        fbox = box.Box(Lx=snapshot.box.Lx, Ly=snapshot.box.Ly, Lz=snapshot.box.Lz)
+        # compute nearest neighbors for 6 nearest neighbors
+
+        nn.compute(fbox, snapshot.particles.position, snapshot.particles.position)
+
+        # get the neighborlist
+        n_list = nn.getNeighborList()
+        n_idxs = n_list[bond_from_idx]
+        for n_idx in n_idxs:
+            if n_idx != nn.getUINTMAX():
+                p_typeid = snapshot.particles.typeid[n_idx]
+                p_type = snapshot.particles.types[p_typeid]
+                if p_type == bond_to_type:
+                    bond_to_rank = self.get_bond_rank(n_idx, snapshot)
                     if bond_to_rank < bond_to_max_rank:
                         delta_e = 0.1
                         if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
-                            # bond_test
-                            self.make_bond(bond_from_idx, bond_to_idx, snapshot)
+                            self.make_bond(bond_from_idx, n_idx, snapshot)
+                            made_bonds = True
                             print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
-                                                                                 bond_to_type, bond_to_idx))
-                            # print("Rank of A {} type of A {}".format(rank, typeA))
-                            # print("Rank of B {} type of B {}".format(bond_rank, typeB))
-            self.system.restore_snapshot(snapshot)
-        else:
-            print("Can't bond it anymore")
+                                                                                 bond_to_type, n_idx))
+
+        return made_bonds
+
+    def find_neighbours_and_bond(self, axis, bond_from_idx, bond_from_type, bond_to_group, bond_to_max_rank, bond_to_type,
+                                 snapshot, xyz0):
+        made_bonds = False
+        for p in bond_to_group:
+            xyz1 = p.position
+            r = self.pbc_diff(np.array(xyz0), np.array(xyz1), axis)
+            if r < self.CUT:
+                bond_to_idx = p.tag
+                bond_to_rank = self.get_bond_rank(bond_to_idx, snapshot)
+                if bond_to_rank < bond_to_max_rank:
+                    delta_e = 0.1
+                    if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
+                        # bond_test
+                        self.make_bond(bond_from_idx, bond_to_idx, snapshot)
+                        made_bonds = True
+                        print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
+                                                                             bond_to_type, bond_to_idx))
+                        # print("Rank of A {} type of A {}".format(rank, typeA))
+                        # print("Rank of B {} type of B {}".format(bond_rank, typeB))
+
+        return made_bonds
 
     @staticmethod
     def make_bond(index_a, index_b, snapshot):
