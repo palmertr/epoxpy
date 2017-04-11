@@ -27,6 +27,9 @@ pip install .
 * How to run tests
 ```
 python test_simulation.py
+
+cd epoxpy
+pytest
 ```
 
 ### Who do I talk to? ###
