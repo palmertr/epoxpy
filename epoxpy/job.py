@@ -30,5 +30,6 @@ class BatchJob(Job):
 class SingleJob(BatchJob):
 
     def __init__(self, simulation):
+        del self.sims[:]
         self.sims.append(simulation)
         print('New single job created to run {}'.format(self.sims[0].get_sim_name()))

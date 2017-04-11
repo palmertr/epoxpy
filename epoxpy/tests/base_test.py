@@ -64,3 +64,16 @@ class BaseTest:
                   [1.00000000e+01, 1.12000000e+00, 2.73277095e-18],
                   [1.00000000e+01, 1.26000000e+00, 5.04984341e-17]])
         return array
+
+    @pytest.fixture
+    def datadir(tmpdir, request):
+        '''
+        Fixture responsible for searching a folder with the same name of test
+        module and, if available, return the directory path.
+        '''
+        import os
+
+        filename = request.module.__file__
+        test_dir, _ = os.path.splitext(filename)
+        return test_dir
+

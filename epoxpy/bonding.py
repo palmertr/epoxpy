@@ -10,10 +10,11 @@ class Bonding:
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
 
-    def __init__(self, system, epoxy_sim, log):
+    def __init__(self, system, epoxy_sim, log, legacy_bonding=False):
         self.system = system
         self.epoxy_sim = epoxy_sim
         self.log = log
+        self.legacy_bonding = legacy_bonding
         parallel.setNumThreads(4)
 
     def __call__(self, step):
@@ -57,16 +58,18 @@ class Bonding:
             xyz0 = snapshot.particles.position[bond_from_idx]
             axis = [snapshot.box.Lx, snapshot.box.Ly, snapshot.box.Lz]
 
-            start_time = time.time()
-            #made_bonds = self.find_neighbours_and_bond(axis, bond_from_idx, bond_from_type, bond_to_group, bond_to_max_rank,
-            #                              bond_to_type, snapshot, xyz0)
-
-            made_bonds = self.find_neighbours_and_bond_using_frued(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
-                                                      snapshot)
-            stop_time = time.time()
+#           start_time = time.time()
+            if self.legacy_bonding is True:
+                made_bonds = self.find_neighbours_and_bond(axis, bond_from_idx, bond_from_type, bond_to_group,
+                                                           bond_to_max_rank, bond_to_type, snapshot, xyz0)
+            else:
+                made_bonds = self.find_neighbours_and_bond_using_frued(bond_from_idx, bond_from_type, bond_to_max_rank,
+                                                                       bond_to_type, snapshot)
+#           stop_time = time.time()
             # print("time to calc neighbours for 1 frame = {}".format(stop_time - start_time))
             if made_bonds is True:
                 self.system.restore_snapshot(snapshot)
+
         else:
             print("Can't bond it anymore")
 
