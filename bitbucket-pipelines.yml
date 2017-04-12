@@ -9,7 +9,8 @@ pipelines:
   default:
     - step:
         script: # Modify the commands below to build your repository.
-          - conda env create -f conda_env.yml
-          - source activate epoxy_sim
+          - RUN conda config --add channels conda-forge \
+            && conda env create -f conda_env.yml \
+            && source activate epoxy_sim
           - cd epoxpy
           - pytest
