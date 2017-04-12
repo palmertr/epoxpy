@@ -18,3 +18,6 @@ pipelines:
             - echo "This script runs only on commit to freud_integration branch"
             - ls
             - conda env create -f conda_env.yml
+            - source activate epoxy_sim
+            - cd epoxpy
+            - pytest
