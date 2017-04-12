@@ -23,12 +23,26 @@ class EpoxySimulation(Simulation):
           output_dir: default is the working directory
           bond     : boolean value denoting whether to run the bonding routine for A's and B's
           bond_period: time interval between calls to the bonding routine
+          
+          kwargs: These are parameters which might not be necessary from a user perspective. Includes parameters for 
+          backward compatibility also.
+                legacy_bonding: boolean value indicating whether to use legacy bonding or frued bonding routine
+                                Default is "False"
+                exclude_mixing_in_output: boolean value indicating whether the initial mixing phase should appear 
+                                          in the output files. This may or may not be needed for analysis. 
+                                          Default is "False"
+                init_file_name: Full path to the initial file being written to disk during initialization. Please do
+                                not use this to initialize from an initial structure created externally. That is not
+                                the current intention of this argument. For now, use this to switch the use of gsd file
+                                vs. hoomdxml file. Why did I not just use one of them instead? Because hoomdxml is
+                                human readable and is handy for debugging, but is deprecated. So if they remove support
+                                its easy to switch to using gsd file format.
     """
     __metaclass__ = ABCMeta
     engine_name = 'HOOMD'
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
-                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, legacy_bonding=False):
+                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
@@ -47,12 +61,16 @@ class EpoxySimulation(Simulation):
         self.msd_groups = None
         self.system = None
         self.dt = dt
-        self.legacy_bonding = legacy_bonding
+
+        # below are default developer arguments which can be set through kwargs in sub classes for testing.
+        self.legacy_bonding = False
+        self.exclude_mixing_in_output = False
+        self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
 
     def get_sim_name(self):
         return self.simulation_name
 
-    def run_initial_structure(self):
+    def run_mixing(self):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())
         hoomd.run(self.mix_time)
@@ -60,6 +78,9 @@ class EpoxySimulation(Simulation):
                             filename=os.path.join(self.output_dir, 'mix.hoomdxml'), all=True)
 
     def run_md(self):
+        if self.exclude_mixing_in_output is True:
+            md.integrate.mode_standard(dt=self.dt)
+            md.integrate.nve(group=hoomd.group.all())
         hoomd.run(self.md_time)
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
@@ -70,12 +91,25 @@ class EpoxySimulation(Simulation):
         pass
 
     @abstractmethod
-    def set_force_field(self):
+    def setup_mixing_run(self):
         pass
 
     @abstractmethod
     def setup_md_run(self):
         pass
+
+    @staticmethod
+    def initialize_context():
+        try:
+            __IPYTHON__
+            run_from_ipython = True
+        except NameError:
+            run_from_ipython = False
+        if run_from_ipython:
+            print('Initializing HOOMD in ipython')
+            hoomd.context.initialize('--mode=cpu')
+        else:
+            hoomd.context.initialize()
 
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
@@ -101,22 +135,35 @@ class EpoxySimulation(Simulation):
 
         print('Initializing {}'.format(self.simulation_name))
         self.set_initial_structure()
-        self.set_force_field()
-        self.configure_outputs()
-        self.run_initial_structure()
+        self.setup_mixing_run()
+        if self.exclude_mixing_in_output is False:
+            self.configure_outputs()
+        self.run_mixing()
+        if self.exclude_mixing_in_output is True:
+            if self.init_file_name.endswith('.hoomdxml'):
+                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+            elif self.init_file_name.endswith('.gsd'):
+                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
     def run(self):
+        if self.exclude_mixing_in_output is True:
+            self.initialize_context()
+            if self.init_file_name.endswith('.hoomdxml'):
+                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+            elif self.init_file_name.endswith('.gsd'):
+                self.system = hoomd.init.read_gsd(self.init_file_name, frame=0, time_step=0)
         self.setup_md_run()
         print('Running {}'.format(self.simulation_name))
 
-        deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write,
-                               filename=os.path.join(self.output_dir,
-                                                     'msd.log'), header_prefix='#')
+        deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write, overwrite=True,
+                               filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
             bonding_callback = Bonding(system=self.system, epoxy_sim=self, log=log, legacy_bonding=self.legacy_bonding)
             bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
 
+        if self.exclude_mixing_in_output is True:
+            self.configure_outputs()
         self.run_md()
 
         if self.bond is True:

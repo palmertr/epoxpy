@@ -33,10 +33,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, legacy_bonding=False):
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
-                                 bond_period=bond_period, box=box, dt=dt, legacy_bonding=legacy_bonding)
+                                 bond_period=bond_period, box=box, dt=dt)
         self.num_a = num_a
         self.num_b = num_b
         self.num_c = num_c
@@ -46,6 +46,11 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_a = None
         self.group_b = None
         self.group_c = None
+
+        print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
+        # setting developer variables through kwargs for testing.
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def set_initial_structure(self):
         blend = Epoxy_A_10_B_20_C10_2_Blend()
@@ -78,13 +83,21 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.system.restore_snapshot(snapshot)
         self.system.bonds.add('A-B', 1, 15)
 
-    def set_force_field(self):
+        if self.exclude_mixing_in_output is True:
+            if self.init_file_name.endswith('.hoomdxml'):
+                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+            elif self.init_file_name.endswith('.gsd'):
+                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+
+            del self.system, snapshot  # needed for re initializing hoomd after randomize
+
+    def setup_mixing_run(self):
         # Mix Step/MD Setup
         self.group_a = hoomd.group.type(name='a-particles', type='A')
         self.group_b = hoomd.group.type(name='b-particles', type='B')
         self.group_c = hoomd.group.type(name='c-particles', type='C')
-
         self.msd_groups = [self.group_a, self.group_b, self.group_c]
+
         nl = md.nlist.cell()
         self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
         # dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
@@ -102,7 +115,31 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
     def setup_md_run(self):
-        profile = self.temp_prof.get_profile()
-        print('temperature profile {}'.format(profile.points))
-        self.dpd.set_params(kT=profile)
+        self.group_a = hoomd.group.type(name='a-particles', type='A')
+        self.group_b = hoomd.group.type(name='b-particles', type='B')
+        self.group_c = hoomd.group.type(name='c-particles', type='C')
+        self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
+        if self.exclude_mixing_in_output is True:
+            nl = md.nlist.cell()
+            profile = self.temp_prof.get_profile()
+            print('temperature profile {}'.format(profile.points))
+            #self.dpd.set_params(kT=profile)
+            self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
+            # dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
+            self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
+            self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
+            self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+
+            self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
+            self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
+            self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
+
+            self.harmonic = md.bond.harmonic()
+            # 0 for C-C bond. We know its assigned a bond id 0 from the hoomdxml file saved by mbuild
+            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+        else:
+            profile = self.temp_prof.get_profile()
+            print('temperature profile {}'.format(profile.points))
+            self.dpd.set_params(kT=profile)
