@@ -1,5 +1,5 @@
 from epoxy_simulation import EpoxySimulation
-from epoxpy.lib import A, B, C, Epoxy_A_10_B_20_C10_2_Blend
+from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 import hoomd
 from hoomd import md
 from hoomd import deprecated
@@ -32,14 +32,14 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
           bond_period: time interval between calls to the bonding routine
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
-                 num_c=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, **kwargs):
+                 num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
-                                 bond_period=bond_period, box=box, dt=dt)
-        self.num_a = num_a
-        self.num_b = num_b
-        self.num_c = num_c
+                                 bond_period=bond_period, box=box, dt=dt, density=density)
+        self.num_a = num_a * n_mul
+        self.num_b = num_b * n_mul
+        self.num_c10 = num_c10 * n_mul
         self.n_mul = n_mul
         self.dpd = None
         self.harmonic = None
@@ -53,8 +53,20 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             setattr(self, key, value)
 
     def set_initial_structure(self):
-        blend = Epoxy_A_10_B_20_C10_2_Blend()
-        mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
+        if self.shrink is True:
+            desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
+            desired_box_dim = (desired_box_volume ** (1./3.))
+            self.box = [desired_box_dim, desired_box_dim, desired_box_dim]
+            print('Packing {} A particles ..'.format(self.num_a))
+            mix_box = mb.packing.fill_box(A(), self.num_a, box=self.box)
+            mix_box = mb.packing.solvate(mix_box, B(), self.num_b, box=self.box)
+            print('Packing {} B particles ..'.format(self.num_b))
+            mix_box = mb.packing.solvate(mix_box, C10(), self.num_c10, box=self.box)
+            print('Packing {} C10 particles ..'.format(self.num_c10))
+        else:
+            blend = Epoxy_A_10_B_20_C10_2_Blend()
+            mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
+
         file_name = os.path.join(self.output_dir, 'initial.gsd')
         if file_name.endswith('.hoomdxml'):
             mix_box.save(file_name)
@@ -83,6 +95,14 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.system.restore_snapshot(snapshot)
         self.system.bonds.add('A-B', 1, 15)
 
+        if self.shrink is True:
+            hoomd.update.box_resize(period=1, L=desired_box_dim)
+            hoomd.run(self.shrink_time)
+            snapshot = self.system.take_snapshot()
+            print('Initial box dimension: {}'.format(snapshot.box))
+
+        # if we want to exclude the mix phase, save the state after mixing as initial.gsd or initial.hoomdxml and load
+        # it as the initial condition before performing the md run, otherwise just keep running the same system.
         if self.exclude_mixing_in_output is True:
             if self.init_file_name.endswith('.hoomdxml'):
                 deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)

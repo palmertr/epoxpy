@@ -37,12 +37,16 @@ class EpoxySimulation(Simulation):
                                 vs. hoomdxml file. Why did I not just use one of them instead? Because hoomdxml is
                                 human readable and is handy for debugging, but is deprecated. So if they remove support
                                 its easy to switch to using gsd file format.
+                shrink: boolean value indicating whether the initial structure will be shrunk to reach the specified
+                        density. default is "True"
+                shrink_time: number of timesteps to run hoomd to shrink the initial volume to desired density.
+                             Default is 1 time step.
     """
     __metaclass__ = ABCMeta
     engine_name = 'HOOMD'
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
-                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2):
+                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
@@ -61,11 +65,14 @@ class EpoxySimulation(Simulation):
         self.msd_groups = None
         self.system = None
         self.dt = dt
+        self.density = density
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
         self.exclude_mixing_in_output = False
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
+        self.shrink_time = 1.0
+        self.shrink = True
 
     def get_sim_name(self):
         return self.simulation_name
