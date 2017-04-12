@@ -1,26 +1,20 @@
-FROM continuumio/miniconda3:latest
+image: continuumio/miniconda3
 
-# Install extra packages if required
-RUN apt-get update && apt-get install -y \
-    xxxxxx \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add the user that will run the app (no need to run as root)
-RUN groupadd -r cmelab && useradd -r -g cmelab cmelab
-
-WORKDIR /app
-
-# Install myapp requirements
-COPY conda_env.yml /app/conda_env.yml
-RUN conda config --add channels conda-forge \
-    && conda env create -n epoxpy -f conda_env.yml \
-    && rm -rf /opt/conda/pkgs/*
-
-# Install myapp
-COPY . /app/
-RUN chown -R cmelab:cmelab /app/*
-
-# activate the myapp environment
-ENV PATH /opt/conda/envs/epoxpy/bin:$PATH
-
-RUN ll
+pipelines:
+  default:
+    - step:
+        script: # Modify the commands below to build your repository.
+          - echo "Default pipeline."
+          - ls
+  branches:
+    master:
+      - step:
+          script:
+            - echo "This script runs only on commit to the master branch."
+            - ls
+    freud_integration:
+      - step:
+          script:
+            - echo "This script runs only on commit to freud_integration branch"
+            - ls
+            - /bin/bash conda env create -f conda_env.yml
