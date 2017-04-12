@@ -1,0 +1,20 @@
+image: continuumio/miniconda3
+
+pipelines:
+  default:
+    - step:
+        script: # Modify the commands below to build your repository.
+          - echo "Default pipeline."
+          - ls
+  branches:
+    master:
+      - step:
+          script:
+            - echo "This script runs only on commit to the master branch."
+            - ls
+    freud_integration:
+      - step:
+          script:
+            - echo "This script runs only on commit to freud_integration branch"
+            - ls
+            - /bin/bash conda env create -f conda_env.yml
