@@ -1,16 +1,26 @@
-# This is a sample build configuration for Python.
-# Check our guides at https://confluence.atlassian.com/x/x4UWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: continuumio/miniconda3
+FROM continuumio/miniconda3:latest
 
-pipelines:
-  default:
-    - step:
-        script: # Modify the commands below to build your repository.
-          - RUN conda config --add channels conda-forge \
-            && conda env create -f conda_env.yml \
-            && source activate epoxy_sim
-          - cd epoxpy
-          - pytest
+# Install extra packages if required
+RUN apt-get update && apt-get install -y \
+    xxxxxx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add the user that will run the app (no need to run as root)
+RUN groupadd -r cmelab && useradd -r -g cmelab cmelab
+
+WORKDIR /app
+
+# Install myapp requirements
+COPY conda_env.yml /app/conda_env.yml
+RUN conda config --add channels conda-forge \
+    && conda env create -n epoxpy -f conda_env.yml \
+    && rm -rf /opt/conda/pkgs/*
+
+# Install myapp
+COPY . /app/
+RUN chown -R cmelab:cmelab /app/*
+
+# activate the myapp environment
+ENV PATH /opt/conda/envs/epoxpy/bin:$PATH
+
+RUN ll
