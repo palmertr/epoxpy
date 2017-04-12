@@ -17,4 +17,3 @@ pipelines:
           script:
             - echo "This script runs only on commit to freud_integration branch"
             - ls
-            - /bin/bash conda env create -f conda_env.yml
