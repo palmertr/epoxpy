@@ -8,8 +8,7 @@ class TestLegacyBonding(BaseTest):
     simulation result.
     Checks if positions of particles are close to baseline particle positions.
     """
-    @pytest.mark.skip(reason="The position of atoms at final frame does not seem to match positions generated on "
-                             "another machine")
+    @pytest.mark.long
     def test_epoxy_sim_legacy_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
@@ -36,7 +35,8 @@ class TestLegacyBonding(BaseTest):
         out_dir = str(tmpdir)
         myEpoxySim = es.ABCTypeEpoxySimulation('legacy_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0,
-                                               legacy_bonding=True, output_dir=out_dir)
+                                               legacy_bonding=True,
+                                               output_dir=out_dir, shrink=False)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()

@@ -7,8 +7,7 @@ class TestWOBonding(BaseTest):
     Test class for testing simulation result for ABCTypeEpoxySimulation with baseline simulation result.
     Checks if positions of particles are close to baseline particle positions.
     """
-    @pytest.mark.skip(reason="The position of atoms at final frame does not seem to match positions generated on "
-                             "another machine")
+    @pytest.mark.long
     def test_epoxy_sim_wo_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
@@ -36,7 +35,7 @@ class TestWOBonding(BaseTest):
         exclude_mixing_in_output = False
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
-                                               exclude_mixing_in_output=exclude_mixing_in_output)
+                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()
@@ -65,8 +64,7 @@ class TestWOBonding(BaseTest):
         current_pos = snapshot.particles.position
         assert np.allclose(expected_pos, current_pos)
 
-    @pytest.mark.skip(reason="The position of atoms at final frame does not seem to match positions generated on "
-                             "another machine")
+    @pytest.mark.long
     def test_epoxy_sim_wo_bonding_exclude_mixing_in_output(self, datadir, tmpdir):
         """
         Tests whether the exclude mixing in output breaks any existing functionality.
@@ -100,7 +98,7 @@ class TestWOBonding(BaseTest):
         exclude_mixing_in_output = True
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
-                                               exclude_mixing_in_output=exclude_mixing_in_output)
+                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()
