@@ -137,11 +137,7 @@ class Bonding:
 
     @staticmethod
     def get_bond_rank(index, snapshot):
-        rank = 0
-        for bond in snapshot.bonds.group:
-            if bond[0] == index or bond[1] == index:
-                rank += 1
-        return rank
+        return np.count_nonzero(snapshot.bonds.group == index)
 
     @staticmethod
     def pbc_diff(p1, p2, axes):
