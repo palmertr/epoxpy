@@ -8,6 +8,7 @@ class TestWOBonding(BaseTest):
     Checks if positions of particles are close to baseline particle positions.
     """
     @pytest.mark.long
+    @pytest.mark.not_implemented
     def test_epoxy_sim_wo_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
@@ -65,6 +66,7 @@ class TestWOBonding(BaseTest):
         assert np.allclose(expected_pos, current_pos)
 
     @pytest.mark.long
+    @pytest.mark.not_implemented
     def test_epoxy_sim_wo_bonding_exclude_mixing_in_output(self, datadir, tmpdir):
         """
         Tests whether the exclude mixing in output breaks any existing functionality.

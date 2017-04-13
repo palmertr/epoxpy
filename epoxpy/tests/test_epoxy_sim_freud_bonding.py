@@ -9,6 +9,7 @@ class TestLegacyBonding(BaseTest):
     Checks if positions of particles are close to baseline particle positions.
     """
     @pytest.mark.long
+    @pytest.mark.not_implemented
     def test_epoxy_sim_legacy_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
