@@ -11,8 +11,8 @@
 #SBATCH --gres=gpu:2
 
 module purge
-module use /scratch/erjank_project/mike_modules/modulefiles/
-module load hoomd/2.1.0-sp
+#module use /scratch/erjank_project/mike_modules/modulefiles/
+#module load hoomd/2.1.0-sp
+source activate epoxpy
 
-
-mpirun python test_simulation.py
+python test_simulation.py
