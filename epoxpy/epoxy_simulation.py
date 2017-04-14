@@ -1,6 +1,6 @@
 import os
 from simulation import Simulation
-from bonding import Bonding
+from bonding import LegacyBonding, FreudBonding
 import hoomd
 from hoomd import md
 from hoomd import deprecated
@@ -166,11 +166,15 @@ class EpoxySimulation(Simulation):
                                filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
-            bonding_callback = Bonding(system=self.system, epoxy_sim=self, log=log, legacy_bonding=self.legacy_bonding)
+            if self.legacy_bonding is True:
+                bonding_callback = LegacyBonding(system=self.system, epoxy_sim=self, log=log)
+            else:
+                bonding_callback = FreudBonding(system=self.system, epoxy_sim=self, log=log)
             bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
 
         if self.exclude_mixing_in_output is True:
             self.configure_outputs()
+        hoomd.util.quiet_status()
         self.run_md()
 
         if self.bond is True:
