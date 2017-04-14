@@ -132,7 +132,7 @@ class EpoxySimulation(Simulation):
                           header_prefix='#', overwrite=True)
         dump.dcd(filename=os.path.join(self.output_dir, 'traj.dcd'), period=self.dcd_write, overwrite=True)
         dump.gsd(filename=os.path.join(self.output_dir, 'data.gsd'), period=self.dcd_write, group=hoomd.group.all(),
-                 overwrite=True, static=['attribute', 'topology'])
+                 overwrite=True, static=['attribute'])
 
     def initialize(self):
         hoomd.context.initialize()
