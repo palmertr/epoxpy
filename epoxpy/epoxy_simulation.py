@@ -73,6 +73,7 @@ class EpoxySimulation(Simulation):
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
         self.shrink_time = 1.0
         self.shrink = True
+        self.ext_init_struct_path = None
 
     def get_sim_name(self):
         return self.simulation_name
@@ -141,7 +142,14 @@ class EpoxySimulation(Simulation):
             os.makedirs(self.output_dir)
 
         print('Initializing {}'.format(self.simulation_name))
-        self.set_initial_structure()
+        if self.ext_init_struct_path is None:
+            self.set_initial_structure()
+        else:
+            if self.ext_init_struct_path.endswith('.hoomdxml'):
+                self.system = hoomd.deprecated.init.read_xml(self.ext_init_struct_path)
+            elif self.ext_init_struct_path.endswith('.gsd'):
+                self.system = hoomd.init.read_gsd(self.ext_init_struct_path, frame=0, time_step=0)
+
         self.setup_mixing_run()
         if self.exclude_mixing_in_output is False:
             self.configure_outputs()
