@@ -65,18 +65,17 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             print('Packing {} C10 particles ..'.format(self.num_c10))
         else:
             blend = Epoxy_A_10_B_20_C10_2_Blend()
-            mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
+            mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050, seed=1020)
 
-        file_name = os.path.join(self.output_dir, 'initial.gsd')
-        if file_name.endswith('.hoomdxml'):
-            mix_box.save(file_name)
-        elif file_name.endswith('.gsd'):
-            mix_box.save(file_name, write_ff=False)
+        if self.init_file_name.endswith('.hoomdxml'):
+            mix_box.save(self.init_file_name)
+        elif self.init_file_name.endswith('.gsd'):
+            mix_box.save(self.init_file_name, write_ff=False)
 
-        if file_name.endswith('.hoomdxml'):
-            self.system = hoomd.deprecated.init.read_xml(file_name)
-        elif file_name.endswith('.gsd'):
-            self.system = hoomd.init.read_gsd(file_name)
+        if self.init_file_name.endswith('.hoomdxml'):
+            self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+        elif self.init_file_name.endswith('.gsd'):
+            self.system = hoomd.init.read_gsd(self.init_file_name)
 
         print('Initial box dimension: {}'.format(self.system.box.dimensions))
 
