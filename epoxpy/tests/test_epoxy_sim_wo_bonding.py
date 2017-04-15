@@ -20,7 +20,7 @@ class TestWOBonding(BaseTest):
 
         random.seed(1020)
         print('\n# Test: test_epoxy_sim_wo_bonding')
-        expected_gsd_file = os.path.join(datadir,'wo_bonding.gsd')
+        expected_gsd_file = os.path.join(datadir, 'wo_bonding.gsd')
         print('expected gsd file path:{}'.format(expected_gsd_file))
 
         mix_time = 3e4
@@ -30,13 +30,15 @@ class TestWOBonding(BaseTest):
         type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
         type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
         type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+        type_A_md_temp_profile.add_state_point(250 * time_scale, 1.0 * temp_scale)
 
         out_dir = str(tmpdir)
         exclude_mixing_in_output = False
+        initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
-                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
+                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False,
+                                               ext_init_struct_path=initial_structure_path)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()
@@ -94,13 +96,15 @@ class TestWOBonding(BaseTest):
         type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
         type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
         type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+        type_A_md_temp_profile.add_state_point(250 * time_scale, 1.0 * temp_scale)
 
         out_dir = str(tmpdir)
         exclude_mixing_in_output = True
+        initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
-                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
+                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False,
+                                               ext_init_struct_path=initial_structure_path)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()
