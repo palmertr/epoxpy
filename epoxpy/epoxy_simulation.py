@@ -206,8 +206,9 @@ class EpoxySimulation(Simulation):
 
         if self.bond is True:
             bond_callback.disable()
-            curing_callback.disable()
             log.disable()
+            if self.log_curing is True:
+                curing_callback.disable()
 
     def output(self):
         import numpy as np
