@@ -75,6 +75,9 @@ class EpoxySimulation(Simulation):
         self.shrink_time = 1.0
         self.shrink = True
         self.ext_init_struct_path = None
+        self.log_curing = False
+        self.curing_log_period = 1e5
+        self.curing_log = []
 
     def get_sim_name(self):
         return self.simulation_name
@@ -168,6 +171,10 @@ class EpoxySimulation(Simulation):
             # system.
             del self.system  # needed for re initializing hoomd after randomize
 
+    @abstractmethod
+    def calculate_curing_percentage(self, step):
+        pass
+
     def run(self):
         if self.exclude_mixing_in_output is True:
             self.initialize_context()
@@ -188,6 +195,10 @@ class EpoxySimulation(Simulation):
                 bonding_callback = FreudBonding(system=self.system, epoxy_sim=self, log=log)
             bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
 
+            if self.log_curing is True:
+                curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
+                                                         period=self.curing_log_period)
+
         if self.exclude_mixing_in_output is True:
             self.configure_outputs()
         hoomd.util.quiet_status()
@@ -195,6 +206,7 @@ class EpoxySimulation(Simulation):
 
         if self.bond is True:
             bond_callback.disable()
+            curing_callback.disable()
             log.disable()
 
     def output(self):

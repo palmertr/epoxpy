@@ -1,5 +1,6 @@
 from epoxy_simulation import EpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
+from epoxpy.bonding import FreudBonding
 import hoomd
 from hoomd import md
 from hoomd import deprecated
@@ -166,3 +167,12 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             profile = self.temp_prof.get_profile()
             print('temperature profile {}'.format(profile.points))
             self.dpd.set_params(kT=profile)
+
+    def calculate_curing_percentage(self, step):
+        snapshot = self.system.take_snapshot(bonds=True)
+        n_bonds = len(snapshot.bonds.group)
+        possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS) + (self.num_b * FreudBonding.MAX_B_BONDS) + \
+                         (self.num_c10 * 9)
+        bond_percent = (n_bonds / possible_bonds)*100.
+        self.curing_log.append((step, bond_percent))
+        print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
