@@ -65,7 +65,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             print('Packing {} C10 particles ..'.format(self.num_c10))
         else:
             blend = Epoxy_A_10_B_20_C10_2_Blend()
-            mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050, seed=1020)
+            mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
 
         if self.init_file_name.endswith('.hoomdxml'):
             mix_box.save(self.init_file_name)
@@ -92,7 +92,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         print(snapshot.bonds.types)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
-        self.system.bonds.add('A-B', 1, 15)
+        #self.system.bonds.add('A-B', 1, 15)
 
         if self.shrink is True:
             hoomd.update.box_resize(period=1, L=desired_box_dim)
@@ -100,15 +100,19 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             snapshot = self.system.take_snapshot()
             print('Initial box dimension: {}'.format(snapshot.box))
 
-        # if we want to exclude the mix phase, save the state after mixing as initial.gsd or initial.hoomdxml and load
-        # it as the initial condition before performing the md run, otherwise just keep running the same system.
-        if self.exclude_mixing_in_output is True:
-            if self.init_file_name.endswith('.hoomdxml'):
-                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-            elif self.init_file_name.endswith('.gsd'):
-                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+        if self.init_file_name.endswith('.hoomdxml'):
+            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+        elif self.init_file_name.endswith('.gsd'):
+            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-            del self.system, snapshot  # needed for re initializing hoomd after randomize
+    def set_external_initial_structure(self):
+        if self.ext_init_struct_path.endswith('.hoomdxml'):
+            self.system = hoomd.deprecated.init.read_xml(self.ext_init_struct_path)
+        elif self.ext_init_struct_path.endswith('.gsd'):
+            self.system = hoomd.init.read_gsd(self.ext_init_struct_path, frame=0, time_step=0)
+        snapshot = self.system.take_snapshot(bonds=True)
+        snapshot.bonds.types = ['C-C', 'A-B']
+        self.system.restore_snapshot(snapshot)
 
     def setup_mixing_run(self):
         # Mix Step/MD Setup

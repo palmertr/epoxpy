@@ -81,13 +81,20 @@ class LegacyBonding(Bonding):
             r = self.pbc_diff(np.array(xyz0), np.array(xyz1), axis)
             if r < self.cut_off_dist:
                 bond_to_idx = p.tag
-                bond_to_rank = self.get_bond_rank(bond_to_idx, snapshot)
+                bond_to_rank = self.get_rank(bond_to_idx, -1)
+                if bond_to_rank < 0:  # -1 is the default value returned when id is not in dict.
+                    bond_to_rank = self.get_bond_rank(bond_to_idx, snapshot)
+                    self.rank_dict[bond_to_idx] = 0
+
                 if bond_to_rank < bond_to_max_rank:
                     delta_e = 0.1
                     if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
                         # bond_test
                         self.make_bond(bond_from_idx, bond_to_idx, snapshot)
                         made_bonds = True
+                        self.rank_dict[bond_from_idx] += 1
+                        self.rank_dict[bond_to_idx] += 1
+                        break
                         #print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
                         #                                                     bond_to_type, bond_to_idx))
                         # print("Rank of A {} type of A {}".format(rank, typeA))
@@ -127,7 +134,10 @@ class LegacyBonding(Bonding):
             # MAX_RANK_B = self.MAX_A_BONDS
         # Check to see if it can make more bonds
 
-        bond_from_rank = self.get_bond_rank(bond_from_idx, snapshot)
+        bond_from_rank = self.get_rank(bond_from_idx, -1)
+        if bond_from_rank < 0:  # -1 is the default value returned when id is not in dict.
+            bond_from_rank = self.get_bond_rank(bond_from_idx, snapshot)
+            self.rank_dict[bond_from_idx] = 0
 
         if bond_from_rank < bond_from_max_rank:
             xyz0 = snapshot.particles.position[bond_from_idx]
@@ -171,12 +181,16 @@ class FreudBonding(Bonding):
                     bond_to_rank = self.get_rank(n_idx, -1)
                     if bond_to_rank < 0:  # -1 is the default value returned when id is not in dict.
                         bond_to_rank = self.get_bond_rank(n_idx, snapshot)
+                        self.rank_dict[n_idx] = 0
 
                     if bond_to_rank < bond_to_max_rank:
                         delta_e = 0.1
                         if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
                             self.make_bond(bond_from_idx, n_idx, snapshot)
                             made_bonds = True
+                            self.rank_dict[bond_from_idx] += 1
+                            self.rank_dict[n_idx] += 1
+                            break
                             #print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
                             #                                                     bond_to_type, n_idx))
 
@@ -214,7 +228,10 @@ class FreudBonding(Bonding):
             # MAX_RANK_B = self.MAX_A_BONDS
         # Check to see if it can make more bonds
 
-        bond_from_rank = self.get_bond_rank(bond_from_idx, snapshot)
+        bond_from_rank = self.get_rank(bond_from_idx, -1)
+        if bond_from_rank < 0:  # -1 is the default value returned when id is not in dict.
+            bond_from_rank = self.get_bond_rank(bond_from_idx, snapshot)
+            self.rank_dict[bond_from_idx] = 0
 
         if bond_from_rank < bond_from_max_rank:
             #xyz0 = snapshot.particles.position[bond_from_idx]

@@ -71,6 +71,7 @@ class EpoxySimulation(Simulation):
         self.legacy_bonding = False
         self.exclude_mixing_in_output = False
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
+        self.mixed_file_name = os.path.join(self.output_dir, 'mixed.hoomdxml')
         self.shrink_time = 1.0
         self.shrink = True
         self.ext_init_struct_path = None
@@ -96,6 +97,10 @@ class EpoxySimulation(Simulation):
 
     @abstractmethod
     def set_initial_structure(self):
+        pass
+
+    @abstractmethod
+    def set_external_initial_structure(self, ext_init_file_path):
         pass
 
     @abstractmethod
@@ -145,28 +150,31 @@ class EpoxySimulation(Simulation):
         if self.ext_init_struct_path is None:
             self.set_initial_structure()
         else:
-            if self.ext_init_struct_path.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.ext_init_struct_path)
-            elif self.ext_init_struct_path.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.ext_init_struct_path, frame=0, time_step=0)
+            self.set_external_initial_structure()
 
         self.setup_mixing_run()
+
         if self.exclude_mixing_in_output is False:
             self.configure_outputs()
         self.run_mixing()
         if self.exclude_mixing_in_output is True:
-            if self.init_file_name.endswith('.hoomdxml'):
-                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-            elif self.init_file_name.endswith('.gsd'):
-                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+            if self.mixed_file_name.endswith('.hoomdxml'):
+                deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
+            elif self.mixed_file_name.endswith('.gsd'):
+                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
+
+            # if we want to exclude the mix phase, save the state after mixing as initial.gsd or initial.hoomdxml and
+            # load it as the initial condition before performing the md run, otherwise just keep running the same
+            # system.
+            del self.system  # needed for re initializing hoomd after randomize
 
     def run(self):
         if self.exclude_mixing_in_output is True:
             self.initialize_context()
-            if self.init_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
-            elif self.init_file_name.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.init_file_name, frame=0, time_step=0)
+            if self.mixed_file_name.endswith('.hoomdxml'):
+                self.system = hoomd.deprecated.init.read_xml(self.mixed_file_name)
+            elif self.mixed_file_name.endswith('.gsd'):
+                self.system = hoomd.init.read_gsd(self.mixed_file_name, frame=0, time_step=0)
         self.setup_md_run()
         print('Running {}'.format(self.simulation_name))
 

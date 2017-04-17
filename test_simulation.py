@@ -24,9 +24,33 @@ fig = type_A_md_temp_profile.get_figure()
 #plt.show()
 fig.savefig("type_A_temp_profile.png")
 
-myEpoxySim = es.ABCTypeEpoxySimulation('sim1', mix_time=mix_time, mix_kt=mix_kt,
-                                       temp_prof=type_A_md_temp_profile, bond=False, n_mul=1.0,
-                                       exclude_mixing_in_output=False)
+shrink = True
+legacy_bonding = False
+bonding = True
+ext_init = True
+exclude_mixing_in_output = False
+
+if ext_init is True:
+    if shrink is True:
+        initial_structure_path = 'shrunk_init.hoomdxml'
+    else:
+        initial_structure_path = 'no_shrink_init.hoomdxml'
+else:
+    initial_structure_path = None
+
+if bonding is False:
+    sim_name = 'no_bonding'
+else:
+    if legacy_bonding is True:
+        sim_name = 'legacy_bonding'
+    else:
+        sim_name = 'freud_bonding'
+
+myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
+                                       temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=1.0,
+                                       shrink=shrink, legacy_bonding=legacy_bonding,
+                                       ext_init_struct_path=initial_structure_path,
+                                       exclude_mixing_in_output=exclude_mixing_in_output)
 
 mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
 mySingleJobForEpoxy.execute()

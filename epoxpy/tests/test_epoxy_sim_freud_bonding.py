@@ -6,11 +6,20 @@ class TestLegacyBonding(BaseTest):
     """
     Test class for testing simulation result for ABCTypeEpoxySimulation with legacy bonding enabled with baseline
     simulation result.
-    Checks if positions of particles are close to baseline particle positions.
     """
     @pytest.mark.long
     @pytest.mark.frued_bonding
     def test_epoxy_sim_freud_bonding(self, datadir, tmpdir):
+        """
+        Checks if positions of particles are close to baseline particle positions. Here the baseline is legacy bonding
+        where initial structure is not shrunk to desired density. Because the density is very less, the legacy bonding
+        and freud bonding has the same behaviour and hence the trajectories are the same. But at higher density, due to
+        the fact that freud neighbourlist returns neighbours sorted by distance and legacy neighbourlist returns
+        neighbours sorted by particle id, the trajectory differs.
+        :param datadir: 
+        :param tmpdir: 
+        :return: 
+        """
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
         import epoxpy.temperature_profile_builder as tpb
@@ -31,7 +40,7 @@ class TestLegacyBonding(BaseTest):
         type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
         type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
         type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+        type_A_md_temp_profile.add_state_point(250 * time_scale, 1.0 * temp_scale)
 
         out_dir = str(tmpdir)
         initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
@@ -76,9 +85,11 @@ class TestLegacyBonding(BaseTest):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.job as jb
         import epoxpy.temperature_profile_builder as tpb
+        import epoxpy.bonding as bondClass
         import random
         import os
         import hoomd.data
+        import numpy as np
 
         random.seed(1020)
         expected_gsd_file = os.path.join(datadir, 'shrunk_freud_bonding.gsd')
@@ -91,13 +102,13 @@ class TestLegacyBonding(BaseTest):
         type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
         type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
         type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+        type_A_md_temp_profile.add_state_point(250 * time_scale, 1.0 * temp_scale)
 
         out_dir = str(tmpdir)
         sim_name = 'shrunk_freud_bonding'
         initial_structure_path = os.path.join(datadir, 'shrunk_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
-                                               temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0,
+                                               temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0, shrink=True,
                                                output_dir=out_dir, ext_init_struct_path=initial_structure_path)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
@@ -116,6 +127,17 @@ class TestLegacyBonding(BaseTest):
         assert snapshot.particles.N == expected_snapshot.particles.N
         expected_bonds = expected_snapshot.bonds.N
         current_bonds = snapshot.bonds.N
-        print('test_epoxy_sim_freud_bonding_count. legacy bonds:{}, freud bonds:{}'.format(expected_bonds,
-                                                                                           current_bonds))
+        print('test_epoxy_sim_freud_shrunk_regression. expected:{}, current:{}'.format(expected_bonds, current_bonds))
         assert current_bonds == expected_bonds
+        expected_pos = expected_snapshot.particles.position
+        current_pos = snapshot.particles.position
+        assert np.allclose(current_pos, expected_pos)
+
+        idxs, counts = np.unique(snapshot.bonds.group, return_counts=True)
+        for idx, index in enumerate(idxs):
+            p_typeid = snapshot.particles.typeid[idx]
+            p_type = snapshot.particles.types[p_typeid]
+            if p_type == 'A':
+                assert (counts[index] <= bondClass.FreudBonding.MAX_A_BONDS)
+            elif p_type == 'B':
+                assert (counts[index] <= bondClass.FreudBonding.MAX_B_BONDS)
