@@ -197,7 +197,7 @@ class EpoxySimulation(Simulation):
 
             if self.log_curing is True:
                 curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
-                                                         period=self.curing_log_period)
+                                                         period=self.curing_log_period, phase=-1)
 
         if self.exclude_mixing_in_output is True:
             self.configure_outputs()

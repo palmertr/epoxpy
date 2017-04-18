@@ -170,9 +170,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
     def calculate_curing_percentage(self, step):
         snapshot = self.system.take_snapshot(bonds=True)
-        n_bonds = len(snapshot.bonds.group)
-        possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS) + (self.num_b * FreudBonding.MAX_B_BONDS) + \
-                         (self.num_c10 * 9)
+        n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
+        possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS) + (self.num_b * FreudBonding.MAX_B_BONDS)
         bond_percent = (n_bonds / possible_bonds)*100.
         self.curing_log.append((step, bond_percent))
         print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
