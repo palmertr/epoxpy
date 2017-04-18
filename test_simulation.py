@@ -58,6 +58,10 @@ else:
 sim_name = '{}_ts_{}_nmul_{}'.format(sim_name, time_scale, nmul)
 
 fig_path = os.path.join(sim_name, 'type_A_temp_profile.png')
+
+if not os.path.exists(sim_name):
+    os.makedirs(sim_name)
+
 fig.savefig(fig_path)
 
 myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
