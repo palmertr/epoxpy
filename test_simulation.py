@@ -1,6 +1,12 @@
 import epoxpy.abc_type_epoxy_simulation as es
 import epoxpy.job as jb
 import epoxpy.temperature_profile_builder as tpb
+import os
+import numpy as np
+import shutil
+import matplotlib
+matplotlib.use('webagg')
+import matplotlib.pyplot as plt
 
 mix_time = 3e4
 mix_kt = 2.0
@@ -25,7 +31,7 @@ type_A_md_temp_profile.add_state_point(500 * time_scale, cure_kt)
 #import matplotlib.pyplot as plt
 fig = type_A_md_temp_profile.get_figure()
 #plt.show()
-fig.savefig("type_A_temp_profile.png")
+
 
 shrink = True
 legacy_bonding = False
@@ -51,6 +57,9 @@ else:
 
 sim_name = '{}_ts_{}_nmul_{}'.format(sim_name, time_scale, nmul)
 
+fig_path = os.path.join(sim_name, 'type_A_temp_profile.png')
+fig.savefig(fig_path)
+
 myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                        temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=nmul,
                                        shrink=shrink, legacy_bonding=legacy_bonding,
@@ -71,13 +80,6 @@ possible_bonds = ((10*4)+(20*2)+(2*9)) * nmul
 bond_percent = (n_bonds/possible_bonds)*100
 
 print('possible bonds:{}, made bonds:{}, percent cure:{}'.format(possible_bonds, n_bonds, bond_percent))
-
-import matplotlib
-matplotlib.use('webagg')
-import matplotlib.pyplot as plt
-import os
-import numpy as np
-import shutil
 
 fig = plt.figure()
 plt.xlabel('Time steps')
