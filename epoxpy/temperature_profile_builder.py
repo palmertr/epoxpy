@@ -36,6 +36,12 @@ class TemperatureProfileBuilder(object):
         last_state_point = self.temperature_profile[-1]
         return last_state_point[0]
 
+    def get_raw(self):
+        return self.temperature_profile
+
+    def set_raw(self, data):
+        self.temperature_profile = data
+
 
 class LinearTemperatureProfileBuilder(TemperatureProfileBuilder):
     """Builds a Linear Temperature Profile."""

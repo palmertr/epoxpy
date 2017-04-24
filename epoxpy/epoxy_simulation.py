@@ -50,7 +50,7 @@ class EpoxySimulation(Simulation):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
-        self.output_dir = os.path.join(output_dir,sim_name)
+        self.output_dir = output_dir  # os.path.join(output_dir,sim_name)
         self.bond = bond
         self.bond_period = bond_period
         self.mix_kT = mix_kt
@@ -170,6 +170,10 @@ class EpoxySimulation(Simulation):
             # load it as the initial condition before performing the md run, otherwise just keep running the same
             # system.
             del self.system  # needed for re initializing hoomd after randomize
+
+    @abstractmethod
+    def get_curing_percentage(self, step):
+        pass
 
     @abstractmethod
     def calculate_curing_percentage(self, step):

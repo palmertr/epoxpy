@@ -34,6 +34,7 @@ class TestLegacyBonding(BaseTest):
 
         out_dir = str(tmpdir)
         initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
+        out_dir = os.path.join(out_dir, 'legacy_bonding')
         myEpoxySim = es.ABCTypeEpoxySimulation('legacy_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0,
                                                legacy_bonding=True,

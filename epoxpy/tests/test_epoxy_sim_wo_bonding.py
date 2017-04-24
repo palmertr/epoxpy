@@ -33,6 +33,7 @@ class TestWOBonding(BaseTest):
 
         out_dir = str(tmpdir)
         exclude_mixing_in_output = False
+        out_dir = os.path.join(out_dir, 'wo_bonding')
         initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
@@ -98,6 +99,7 @@ class TestWOBonding(BaseTest):
 
         out_dir = str(tmpdir)
         exclude_mixing_in_output = True
+        out_dir = os.path.join(out_dir, 'wo_bonding')
         initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation('wo_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,

@@ -43,6 +43,7 @@ class TestLegacyBonding(BaseTest):
         type_A_md_temp_profile.add_state_point(250 * time_scale, 1.0 * temp_scale)
 
         out_dir = str(tmpdir)
+        out_dir = os.path.join(out_dir, 'freud_bonding')
         initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation('freud_bonding', mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0,
@@ -106,6 +107,7 @@ class TestLegacyBonding(BaseTest):
 
         out_dir = str(tmpdir)
         sim_name = 'shrunk_freud_bonding'
+        out_dir = os.path.join(out_dir, sim_name)
         initial_structure_path = os.path.join(datadir, 'shrunk_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0, shrink=True,
