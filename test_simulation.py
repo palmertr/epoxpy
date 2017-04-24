@@ -63,6 +63,8 @@ if not os.path.exists(sim_name):
     os.makedirs(sim_name)
 
 fig.savefig(fig_path)
+in_path = os.path.join(sim_name, 'script_bckp.py')
+shutil.copy(__file__, in_path)
 
 myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                        temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=nmul,
@@ -96,5 +98,3 @@ log_path = os.path.join(sim_name, 'curing.txt')
 fig.savefig(fig_path)
 np.savetxt(log_path, myEpoxySim.curing_log)
 
-in_path = os.path.join(sim_name, 'script_bckp.py')
-shutil.copy(__file__, in_path)
