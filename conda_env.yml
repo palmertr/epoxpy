@@ -1,4 +1,4 @@
-name: epoxy_sim
+name: epoxpy_env
 channels:
 - mosdef
 - omnia
@@ -6,13 +6,15 @@ channels:
 - glotzer
 - defaults
 dependencies:
-- python=2.7
+- python
 - hoomd
 - mbuild
 - freud
 - matplotlib
 - gsd
 - pytest
+- signac
+- signac-flow
 
 
 

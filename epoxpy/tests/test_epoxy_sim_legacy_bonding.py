@@ -16,44 +16,57 @@ class TestLegacyBonding(BaseTest):
         import random
         import os
         import numpy as np
-        import hoomd.data
+        import gsd.hoomd
 
         random.seed(1020)
 
-        expected_gsd_file = os.path.join(datadir, 'legacy_bonding.gsd')
+        expected_gsd_file = os.path.join(datadir, 'data.gsd')
         print('expected gsd file path:{}'.format(expected_gsd_file))
 
+
+        shrink = False
+        legacy_bonding = True
+        bonding = True
+        exclude_mixing_in_output = False
         mix_time = 3e4
         mix_kt = 2.0
         time_scale = 100
-        temp_scale = 1
-        type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
-        type_A_md_temp_profile.add_state_point(60 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(190 * time_scale, 4.5 * temp_scale)
-        type_A_md_temp_profile.add_state_point(240 * time_scale, 1.0 * temp_scale)
+        cure_kt = 2.0
+        nmul = 1.0
+        log_period = 1e5
+        dump_period = 1e2
+        curing_log_period = 1e1
 
+        type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mix_kt, initial_time=mix_time)
+        type_A_md_temp_profile.add_state_point(500 * time_scale, cure_kt)
+
+        sim_name = 'legacy_bonding'
         out_dir = str(tmpdir)
-        initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
-        out_dir = os.path.join(out_dir, 'legacy_bonding')
-        myEpoxySim = es.ABCTypeEpoxySimulation('legacy_bonding', mix_time=mix_time, mix_kt=mix_kt,
-                                               temp_prof=type_A_md_temp_profile, bond=True, n_mul=1.0,
-                                               legacy_bonding=True,
-                                               output_dir=out_dir, shrink=False,
-                                               ext_init_struct_path=initial_structure_path)
+        initial_structure_path = os.path.join(datadir, 'initial.hoomdxml')
+        out_dir = os.path.join(out_dir, sim_name)
+        myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
+                                               temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=nmul,
+                                               shrink=shrink, legacy_bonding=legacy_bonding,
+                                               ext_init_struct_path=initial_structure_path,
+                                               exclude_mixing_in_output=exclude_mixing_in_output, log_curing=False,
+                                               curing_log_period=curing_log_period,
+                                               log_write=log_period,
+                                               dcd_write=dump_period,
+                                               output_dir=out_dir,
+                                               reset_random_after_initialize=True)
 
         mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
         mySingleJobForEpoxy.execute()
 
-        total_time = type_A_md_temp_profile.get_total_sim_time()
-        gsd_write_period = myEpoxySim.dcd_write
-        total_frames = int(round(total_time/gsd_write_period))
-        print('total_frames:{}'.format(total_frames))
-
-        current_gsd = tmpdir.join('legacy_bonding', 'data.gsd')
+        current_gsd = tmpdir.join(sim_name, 'data.gsd')
         gsd_path = str(current_gsd)
-
-        snapshot = hoomd.data.gsd_snapshot(gsd_path, total_frames-1)
-        expected_snapshot = hoomd.data.gsd_snapshot(expected_gsd_file, total_frames-1)
+        print('reading gsd: ', gsd_path)
+        f = gsd.fl.GSDFile(gsd_path, 'rb')
+        t = gsd.hoomd.HOOMDTrajectory(f)
+        snapshot = t[-1]
+        f = gsd.fl.GSDFile(expected_gsd_file, 'rb')
+        t = gsd.hoomd.HOOMDTrajectory(f)
+        expected_snapshot = t[-1]
         assert snapshot.particles.N == expected_snapshot.particles.N
         expected_pos = expected_snapshot.particles.position
         current_pos = snapshot.particles.position

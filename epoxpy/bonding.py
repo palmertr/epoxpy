@@ -11,9 +11,9 @@ class Bonding(object):
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
 
-    def __init__(self, system, epoxy_sim, log, cut_off_dist=1.0):
+    def __init__(self, system, groups, log, cut_off_dist=1.0):
         self.system = system
-        self.epoxy_sim = epoxy_sim
+        self.groups = groups
         self.log = log
         #parallel.setNumThreads(4)
         self.rank_dict = {}
@@ -38,13 +38,6 @@ class Bonding(object):
     @staticmethod
     def get_bond_rank(index, snapshot):
         return np.count_nonzero(snapshot.bonds.group == index)
-        #rank = 0
-        ##print('bonds.group type: {}'.format(type(snapshot.bonds.group)))
-        ##print('num bond groups: {}'.format(snapshot.bonds.N))
-        #for bond in snapshot.bonds.group:
-        #    if bond[0] == index or bond[1] == index:
-        #        rank += 1
-        #return rank
 
     @staticmethod
     def pbc_diff(p1, p2, axes):
@@ -95,10 +88,6 @@ class LegacyBonding(Bonding):
                         self.rank_dict[bond_from_idx] += 1
                         self.rank_dict[bond_to_idx] += 1
                         break
-                        #print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
-                        #                                                     bond_to_type, bond_to_idx))
-                        # print("Rank of A {} type of A {}".format(rank, typeA))
-                        # print("Rank of B {} type of B {}".format(bond_rank, typeB))
 
         return made_bonds
 
@@ -119,14 +108,14 @@ class LegacyBonding(Bonding):
             bond_from_type = snapshot.particles.types[bond_from_typeid]
 
         if bond_from_type == "A":
-            bond_to_group = self.epoxy_sim.group_b
+            bond_to_group = self.groups[1]#.group_b
             bond_to_type = 'B'
             bond_to_max_rank = self.MAX_B_BONDS
             bond_from_max_rank = self.MAX_A_BONDS
             # typeB = "B"
             # MAX_RANK_B = self.MAX_B_BONDS
         elif bond_from_type == 'B':
-            bond_to_group = self.epoxy_sim.group_a
+            bond_to_group = self.groups[0]#.group_a
             bond_to_type = 'A'
             bond_to_max_rank = self.MAX_A_BONDS
             bond_from_max_rank = self.MAX_B_BONDS
@@ -151,13 +140,10 @@ class LegacyBonding(Bonding):
             if made_bonds is True:
                 self.system.restore_snapshot(snapshot)
 
-        #else:
-        #    print("Can't bond it anymore")
-
 
 class FreudBonding(Bonding):
-    def __init__(self, system, epoxy_sim, log):
-        Bonding.__init__(self, system=system, epoxy_sim=epoxy_sim, log=log)
+    def __init__(self, system, groups, log):
+        Bonding.__init__(self, system=system, groups=groups, log=log)
         # create freud nearest neighbor object
         # set number of neighbors
         self.n_neigh = 6
@@ -191,9 +177,6 @@ class FreudBonding(Bonding):
                             self.rank_dict[bond_from_idx] += 1
                             self.rank_dict[n_idx] += 1
                             break
-                            #print("Found one, bonding {} ({}) to {} ({})".format(bond_from_type, bond_from_idx,
-                            #                                                     bond_to_type, n_idx))
-
         return made_bonds
 
     def find_pair(self, timestep):
@@ -201,7 +184,6 @@ class FreudBonding(Bonding):
         snapshot = self.system.take_snapshot(bonds=True)
         n_p = snapshot.particles.N
         bond_from_type = "C"
-        bond_to_group = None
         bond_to_max_rank = None
         bond_from_max_rank = None
         bond_to_type = None
@@ -213,20 +195,15 @@ class FreudBonding(Bonding):
             bond_from_type = snapshot.particles.types[bond_from_typeid]
 
         if bond_from_type == "A":
-            bond_to_group = self.epoxy_sim.group_b
             bond_to_type = 'B'
             bond_to_max_rank = self.MAX_B_BONDS
             bond_from_max_rank = self.MAX_A_BONDS
             # typeB = "B"
             # MAX_RANK_B = self.MAX_B_BONDS
         elif bond_from_type == 'B':
-            bond_to_group = self.epoxy_sim.group_a
             bond_to_type = 'A'
             bond_to_max_rank = self.MAX_A_BONDS
             bond_from_max_rank = self.MAX_B_BONDS
-            # typeB = "A"
-            # MAX_RANK_B = self.MAX_A_BONDS
-        # Check to see if it can make more bonds
 
         bond_from_rank = self.get_rank(bond_from_idx, -1)
         if bond_from_rank < 0:  # -1 is the default value returned when id is not in dict.
@@ -234,16 +211,7 @@ class FreudBonding(Bonding):
             self.rank_dict[bond_from_idx] = 0
 
         if bond_from_rank < bond_from_max_rank:
-            #xyz0 = snapshot.particles.position[bond_from_idx]
-            #axis = [snapshot.box.Lx, snapshot.box.Ly, snapshot.box.Lz]
-
-            #start_time = time.time()
-            made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_type, bond_to_max_rank,
-                                                                       bond_to_type, snapshot)
-#           #stop_time = time.time()
-            # print("time to calc neighbours for 1 frame = {}".format(stop_time - start_time))
+            made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
+                                                       snapshot)
             if made_bonds is True:
                 self.system.restore_snapshot(snapshot)
-
-        #else:
-        #    print("Can't bond it anymore")

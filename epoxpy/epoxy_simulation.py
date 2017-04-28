@@ -1,11 +1,12 @@
 import os
-from simulation import Simulation
-from bonding import LegacyBonding, FreudBonding
+from epoxpy.simulation import Simulation
+from epoxpy.bonding import LegacyBonding, FreudBonding
 import hoomd
 from hoomd import md
 from hoomd import deprecated
 from hoomd import dump
 from abc import ABCMeta, abstractmethod
+import random
 
 
 class EpoxySimulation(Simulation):
@@ -69,7 +70,7 @@ class EpoxySimulation(Simulation):
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
-        self.exclude_mixing_in_output = False
+        self.exclude_mixing_in_output = False # PLEASE NOTE THAT THE TRAJECTORY CHANGES WHEN THIS IS CHANGED!!
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
         self.mixed_file_name = os.path.join(self.output_dir, 'mixed.hoomdxml')
         self.shrink_time = 1.0
@@ -79,31 +80,20 @@ class EpoxySimulation(Simulation):
         self.curing_log_period = 1e5
         self.curing_log = []
 
+        # for tests which compare simulation result against a benchmark
+        # please see issue 6 for more details
+        # (https://bitbucket.org/cmelab/getting-started/issues/6/different-trajectory-obtained-when-using).
+        self.reset_random_after_initialize = False
+
     def get_sim_name(self):
         return self.simulation_name
-
-    def run_mixing(self):
-        md.integrate.mode_standard(dt=self.dt)
-        md.integrate.nve(group=hoomd.group.all())
-        hoomd.run(self.mix_time)
-        deprecated.dump.xml(group=hoomd.group.all(),
-                            filename=os.path.join(self.output_dir, 'mix.hoomdxml'), all=True)
-
-    def run_md(self):
-        if self.exclude_mixing_in_output is True:
-            md.integrate.mode_standard(dt=self.dt)
-            md.integrate.nve(group=hoomd.group.all())
-        hoomd.run(self.md_time)
-        deprecated.dump.xml(group=hoomd.group.all(),
-                            filename=os.path.join(self.output_dir,
-                                                  'final.hoomdxml'), all=True)
 
     @abstractmethod
     def set_initial_structure(self):
         pass
 
     @abstractmethod
-    def set_external_initial_structure(self, ext_init_file_path):
+    def initialize_system_from_file(self, init_file_path=None, use_time_step_from_file=True):
         pass
 
     @abstractmethod
@@ -127,6 +117,14 @@ class EpoxySimulation(Simulation):
         else:
             hoomd.context.initialize()
 
+    @abstractmethod
+    def get_curing_percentage(self, step):
+        pass
+
+    @abstractmethod
+    def calculate_curing_percentage(self, step):
+        pass
+
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
         print('log_write: {} dcd_write: {}'.format(self.log_write, self.dcd_write))
@@ -142,69 +140,73 @@ class EpoxySimulation(Simulation):
         dump.dcd(filename=os.path.join(self.output_dir, 'traj.dcd'), period=self.dcd_write, overwrite=True)
         dump.gsd(filename=os.path.join(self.output_dir, 'data.gsd'), period=self.dcd_write, group=hoomd.group.all(),
                  overwrite=True, static=['attribute'])
+        deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write, overwrite=True,
+                               filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
+
+    def run_mixing(self):
+        md.integrate.mode_standard(dt=self.dt)
+        md.integrate.nve(group=hoomd.group.all())
+        hoomd.run(self.mix_time)
+        if self.mixed_file_name.endswith('.hoomdxml'):
+            deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
+        elif self.mixed_file_name.endswith('.gsd'):
+            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
+
+    def run_md(self):
+        md.integrate.mode_standard(dt=self.dt)
+        md.integrate.nve(group=hoomd.group.all())
+        hoomd.run(self.md_time)
+        deprecated.dump.xml(group=hoomd.group.all(),
+                            filename=os.path.join(self.output_dir,
+                                                  'final.hoomdxml'), all=True)
 
     def initialize(self):
-        hoomd.context.initialize()
-        print('Creating simulation folder: {}'.format(self.output_dir))
+        print('Initializing {}'.format(self.simulation_name))
         if not os.path.exists(self.output_dir):
+            print('Creating simulation folder: {}'.format(self.output_dir))
             os.makedirs(self.output_dir)
 
-        print('Initializing {}'.format(self.simulation_name))
+        self.initialize_context()
         if self.ext_init_struct_path is None:
             self.set_initial_structure()
         else:
-            self.set_external_initial_structure()
+            print('Loading external initial structure : ', self.ext_init_struct_path)
+            self.initialize_system_from_file(self.ext_init_struct_path)
+            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+
+
+        del self.system  # needed for re initializing hoomd
+        self.initialize_context()
+        self.initialize_system_from_file(self.init_file_name)
+        deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
 
         self.setup_mixing_run()
-
-        if self.exclude_mixing_in_output is False:
-            self.configure_outputs()
+        self.configure_outputs()
         self.run_mixing()
-        if self.exclude_mixing_in_output is True:
-            if self.mixed_file_name.endswith('.hoomdxml'):
-                deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
-            elif self.mixed_file_name.endswith('.gsd'):
-                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
-
-            # if we want to exclude the mix phase, save the state after mixing as initial.gsd or initial.hoomdxml and
-            # load it as the initial condition before performing the md run, otherwise just keep running the same
-            # system.
-            del self.system  # needed for re initializing hoomd after randomize
-
-    @abstractmethod
-    def get_curing_percentage(self, step):
-        pass
-
-    @abstractmethod
-    def calculate_curing_percentage(self, step):
-        pass
 
     def run(self):
-        if self.exclude_mixing_in_output is True:
-            self.initialize_context()
-            if self.mixed_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.mixed_file_name)
-            elif self.mixed_file_name.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.mixed_file_name, frame=0, time_step=0)
-        self.setup_md_run()
-        print('Running {}'.format(self.simulation_name))
+        del self.system
+        self.initialize_context()
+        if self.exclude_mixing_in_output:
+            use_time_step_from_file = False
+        else:
+            use_time_step_from_file = True
+        self.initialize_system_from_file(self.mixed_file_name, use_time_step_from_file=use_time_step_from_file)
 
-        deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write, overwrite=True,
-                               filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
+        print('Running MD for {}'.format(self.simulation_name))
+        self.setup_md_run()
+        self.configure_outputs()
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
             if self.legacy_bonding is True:
-                bonding_callback = LegacyBonding(system=self.system, epoxy_sim=self, log=log)
+                bonding_callback = LegacyBonding(system=self.system, groups=self.msd_groups, log=log)
             else:
-                bonding_callback = FreudBonding(system=self.system, epoxy_sim=self, log=log)
+                bonding_callback = FreudBonding(system=self.system, groups=self.msd_groups, log=log)
             bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
 
             if self.log_curing is True:
                 curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
                                                          period=self.curing_log_period, phase=-1)
-
-        if self.exclude_mixing_in_output is True:
-            self.configure_outputs()
         hoomd.util.quiet_status()
         self.run_md()
 
@@ -221,6 +223,8 @@ class EpoxySimulation(Simulation):
     def execute(self):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()
+        if self.reset_random_after_initialize:
+            random.seed(12345)
         self.run()
         self.output()
         print("Finished executing {}".format(self.simulation_name))

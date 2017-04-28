@@ -1,4 +1,4 @@
-from epoxy_simulation import EpoxySimulation
+from epoxpy.epoxy_simulation import EpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 from epoxpy.bonding import FreudBonding
 import hoomd
@@ -93,7 +93,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         print(snapshot.bonds.types)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
-        #self.system.bonds.add('A-B', 1, 15)
 
         if self.shrink is True:
             hoomd.update.box_resize(period=1, L=desired_box_dim)
@@ -106,11 +105,17 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def set_external_initial_structure(self):
-        if self.ext_init_struct_path.endswith('.hoomdxml'):
-            self.system = hoomd.deprecated.init.read_xml(self.ext_init_struct_path)
-        elif self.ext_init_struct_path.endswith('.gsd'):
-            self.system = hoomd.init.read_gsd(self.ext_init_struct_path, frame=0, time_step=0)
+    def initialize_system_from_file(self, file_path, use_time_step_from_file=True):
+        if use_time_step_from_file:
+            time_step = None
+        else:
+            time_step = 0  # start simulation from start.
+
+        if file_path.endswith('.hoomdxml'):
+            self.system = hoomd.deprecated.init.read_xml(file_path, time_step=time_step)
+        elif file_path.endswith('.gsd'):
+            raise ValueError('Reading the most recent frame from gsd file is not yet implemented!')
+            self.system = hoomd.init.read_gsd(file_path, frame=0, time_step=time_step)
         snapshot = self.system.take_snapshot(bonds=True)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
@@ -124,7 +129,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
         nl = md.nlist.cell()
         self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
-        # dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
         self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
         self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
         self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
@@ -134,7 +138,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
 
         self.harmonic = md.bond.harmonic()
-        # 0 for C-C bond. We know its assigned a bond id 0 from the hoomdxml file saved by mbuild
         self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
         self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
@@ -143,30 +146,22 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_b = hoomd.group.type(name='b-particles', type='B')
         self.group_c = hoomd.group.type(name='c-particles', type='C')
         self.msd_groups = [self.group_a, self.group_b, self.group_c]
+        nl = md.nlist.cell()
+        profile = self.temp_prof.get_profile()
+        print('temperature profile {}'.format(profile.points))
+        self.dpd.set_params(kT=profile)
+        self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
+        self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
 
-        if self.exclude_mixing_in_output is True:
-            nl = md.nlist.cell()
-            profile = self.temp_prof.get_profile()
-            print('temperature profile {}'.format(profile.points))
-            #self.dpd.set_params(kT=profile)
-            self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
-            # dpd.pair_coeff.set(['A', 'B', 'C'], ['C', 'A', 'B'], A=1.0, gamma = 1.0)
-            self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
-            self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
-            self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
 
-            self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-            self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-            self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
-
-            self.harmonic = md.bond.harmonic()
-            # 0 for C-C bond. We know its assigned a bond id 0 from the hoomdxml file saved by mbuild
-            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-        else:
-            profile = self.temp_prof.get_profile()
-            print('temperature profile {}'.format(profile.points))
-            self.dpd.set_params(kT=profile)
+        self.harmonic = md.bond.harmonic()
+        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
     def get_curing_percentage(self):
         snapshot = self.system.take_snapshot(bonds=True)

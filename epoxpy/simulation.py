@@ -1,4 +1,3 @@
-from factories import SimulationEngineFactory
 from abc import ABCMeta, abstractmethod
 
 
@@ -10,7 +9,7 @@ class Simulation(object):
     engine_name = 'None'
 
     def __init__(self, engine_name):
-        self.engine = SimulationEngineFactory.get_engine(engine_name)
+        self.engine_name = engine_name
 
     @abstractmethod
     def get_sim_name(self):
