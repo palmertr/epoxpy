@@ -14,14 +14,15 @@ def get_status(job):
     status = 'init'
     if job.isfile('final.hoomdxml') and job.isfile('out.log'):
         status = 'job-computed'
+    elif job.isfile('temperature_profile.png'):
+        status = 'temperature-profile-created'
 
     return status
 
 
 def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, legacy_bonding, ext_init_struct_path,
                   exclude_mixing_in_output, log_curing, curing_log_period, log_write, dcd_write, job, dt, density,
-                  bond_period):
-
+                  bond_period, activation_energy):
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -30,7 +31,7 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     fig = temp_prof.get_figure()
     fig.savefig(fig_path)
     in_path = os.path.join(job.workspace(), 'script_bckp.py')
-    shutil.copy(__file__, in_path)
+    # shutil.copy(__file__, in_path)
 
     myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof, bond=bond,
                                            n_mul=n_mul, shrink=shrink, legacy_bonding=legacy_bonding,
@@ -38,7 +39,7 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            exclude_mixing_in_output=exclude_mixing_in_output, log_curing=log_curing,
                                            curing_log_period=curing_log_period, log_write=log_write,
                                            dcd_write=dcd_write, output_dir=job.workspace(), dt=dt, density=density,
-                                           bond_period=bond_period)
+                                           bond_period=bond_period, activation_energy=activation_energy)
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
     mySingleJobForEpoxy.execute()
@@ -47,7 +48,7 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     log_path = os.path.join(job.workspace(), 'curing.log')
     np.savetxt(log_path, myEpoxySim.curing_log)
 
-    curing_log = zip(*myEpoxySim.curing_log)
+    curing_log = list(zip(*myEpoxySim.curing_log))
     fig = plt.figure()
     plt.xlabel('Time steps')
     plt.ylabel('Cure percent')
@@ -58,6 +59,24 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     fig.savefig(fig_path)
 
 
+def init_job(state_point):
+    project = signac.init_project('ABCTypeEpoxy', 'data/')
+    job = project.open_job(state_point)
+    job.init()
+    job_status = get_status(job)
+    print('job status:{}'.format(job_status))
+    if job_status == 'init':
+        fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
+        temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
+        temp_temperature_profile.set_raw(job.sp.temp_prof)
+        temp_prof = temp_temperature_profile
+        print('tempearture profile:{}'.format(temp_prof))
+        fig = temp_prof.get_figure()
+        fig.savefig(fig_path)
+
+    print('initialize', job)
+
+
 def run_simulation(state_point):
     project = signac.init_project('ABCTypeEpoxy', 'data/')
     job = project.open_job(state_point)
@@ -65,33 +84,54 @@ def run_simulation(state_point):
     print('initialize', job)
     job_status = get_status(job)
     print('job status:{}'.format(job_status))
-    if job_status == 'init':
+    if job_status == 'temperature-profile-created':
         run_epoxy_sim(job=job, **job.statepoint())
 
-kTs = [0.1]
+
+long_simulation = False
+
+if long_simulation:
+    time_scale = 10000
+    n_mul = 1000.0
+    curing_log_period = 1e5
+else:
+    time_scale = 10
+    n_mul = 1.0
+    curing_log_period = 1e1
+
+kTs = [0.1, 1, 2, 4, 6]
 mixing_temperature = 2.0
 mixing_time = 3e4
-time_scale = 1
+
 for kT in kTs:
     flat_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mixing_temperature,
                                                             initial_time=mixing_time)
-    flat_temp_profile.add_state_point(500 * time_scale, kT)
+    flat_temp_profile.add_state_point(50 * time_scale, kT)
+    flat_temp_profile.add_state_point(450 * time_scale, kT)
+
     sp = {'sim_name': 'epoxy_curing_flat_temperature_profile_{}kT'.format(kT),
           'mix_time': mixing_time,
           'mix_kt': mixing_temperature,
           'temp_prof': flat_temp_profile.get_raw(),
           'bond': True,
-          'n_mul': 1.0,
+          'n_mul': n_mul,
           'shrink': True,
           'legacy_bonding': False,
           'ext_init_struct_path': None,
           'exclude_mixing_in_output': False,
           'log_curing': True,
-          'curing_log_period': 1e5,
+          'curing_log_period': curing_log_period,
           'log_write': 1e5,
           'dcd_write': 1e5,
           'bond_period': 1e1,
           'dt': 1e-2,
-          'density': 1.0}
-    print(sp)
-    run_simulation(sp)
+          'density': 1.0,
+          'activation_energy': 0.3}
+    init_job(sp)
+
+project = signac.init_project('ABCTypeEpoxy', 'data/')
+jobs = project.find_jobs({'activation_energy': 0.3,
+                         'curing_log_period': curing_log_period})
+for job in jobs:
+    if len(job.sp.temp_prof) > 2:
+        run_simulation(job.statepoint())
