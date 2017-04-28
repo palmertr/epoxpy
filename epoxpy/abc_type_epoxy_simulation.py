@@ -34,10 +34,11 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, **kwargs):
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
-                                 bond_period=bond_period, box=box, dt=dt, density=density)
+                                 bond_period=bond_period, box=box, dt=dt, density=density,
+                                 activation_energy=activation_energy)
         self.num_a = num_a * n_mul
         self.num_b = num_b * n_mul
         self.num_c10 = num_c10 * n_mul

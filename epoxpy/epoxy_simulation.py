@@ -47,7 +47,7 @@ class EpoxySimulation(Simulation):
     engine_name = 'HOOMD'
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
-                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0):
+                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
@@ -67,6 +67,7 @@ class EpoxySimulation(Simulation):
         self.system = None
         self.dt = dt
         self.density = density
+        self.activation_energy = activation_energy
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
@@ -199,9 +200,11 @@ class EpoxySimulation(Simulation):
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
             if self.legacy_bonding is True:
-                bonding_callback = LegacyBonding(system=self.system, groups=self.msd_groups, log=log)
+                bonding_callback = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
+                                                 activation_energy=self.activation_energy)
             else:
-                bonding_callback = FreudBonding(system=self.system, groups=self.msd_groups, log=log)
+                bonding_callback = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
+                                                activation_energy=self.activation_energy)
             bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
 
             if self.log_curing is True:

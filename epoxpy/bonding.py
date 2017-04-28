@@ -11,10 +11,11 @@ class Bonding(object):
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
 
-    def __init__(self, system, groups, log, cut_off_dist=1.0):
+    def __init__(self, system, groups, log, cut_off_dist=1.0, activation_energy=0.1):
         self.system = system
         self.groups = groups
         self.log = log
+        self.activation_energy = activation_energy
         #parallel.setNumThreads(4)
         self.rank_dict = {}
         self.get_rank = self.rank_dict.get
@@ -80,8 +81,7 @@ class LegacyBonding(Bonding):
                     self.rank_dict[bond_to_idx] = 0
 
                 if bond_to_rank < bond_to_max_rank:
-                    delta_e = 0.1
-                    if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
+                    if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank):
                         # bond_test
                         self.make_bond(bond_from_idx, bond_to_idx, snapshot)
                         made_bonds = True
@@ -142,8 +142,8 @@ class LegacyBonding(Bonding):
 
 
 class FreudBonding(Bonding):
-    def __init__(self, system, groups, log):
-        Bonding.__init__(self, system=system, groups=groups, log=log)
+    def __init__(self, system, groups, log, activation_energy):
+        Bonding.__init__(self, system=system, groups=groups, log=log, activation_energy=activation_energy)
         # create freud nearest neighbor object
         # set number of neighbors
         self.n_neigh = 6
@@ -170,8 +170,7 @@ class FreudBonding(Bonding):
                         self.rank_dict[n_idx] = 0
 
                     if bond_to_rank < bond_to_max_rank:
-                        delta_e = 0.1
-                        if self.bond_test(self.log.query('temperature'), delta_e, bond_to_rank):
+                        if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank):
                             self.make_bond(bond_from_idx, n_idx, snapshot)
                             made_bonds = True
                             self.rank_dict[bond_from_idx] += 1
