@@ -219,15 +219,10 @@ class EpoxySimulation(Simulation):
             if self.log_curing is True:
                 curing_callback.disable()
 
-    def output(self):
-        import numpy as np
-        data = np.genfromtxt(fname=os.path.join(self.output_dir, 'out.log'), skip_header=True)
-
     def execute(self):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()
         if self.reset_random_after_initialize:
             random.seed(12345)
         self.run()
-        self.output()
         print("Finished executing {}".format(self.simulation_name))
