@@ -151,8 +151,10 @@ class FreudBonding(Bonding):
         self.nn = locality.NearestNeighbors(rmax=self.cut_off_dist, n_neigh=self.n_neigh, strict_cut=True)
         snapshot = self.system.take_snapshot()
         self.fbox = box.Box(Lx=snapshot.box.Lx, Ly=snapshot.box.Ly, Lz=snapshot.box.Lz)
+        self.bond_rank_log = []
 
-    def find_neighbours_and_bond(self, bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type, snapshot):
+    def find_neighbours_and_bond(self, bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type, snapshot,
+                                 time_step):
         made_bonds = False
         # compute nearest neighbors for 6 nearest neighbors
         self.nn.compute(self.fbox, snapshot.particles.position, snapshot.particles.position)
@@ -165,6 +167,7 @@ class FreudBonding(Bonding):
                 p_type = snapshot.particles.types[p_typeid]
                 if p_type == bond_to_type:
                     bond_to_rank = self.get_rank(n_idx, -1)
+                    self.bond_rank_log.append([p_typeid, bond_to_rank, time_step])
                     if bond_to_rank < 0:  # -1 is the default value returned when id is not in dict.
                         bond_to_rank = self.get_bond_rank(n_idx, snapshot)
                         self.rank_dict[n_idx] = 0
@@ -205,12 +208,13 @@ class FreudBonding(Bonding):
             bond_from_max_rank = self.MAX_B_BONDS
 
         bond_from_rank = self.get_rank(bond_from_idx, -1)
+        self.bond_rank_log.append([bond_from_typeid,bond_from_rank,timestep])
         if bond_from_rank < 0:  # -1 is the default value returned when id is not in dict.
             bond_from_rank = self.get_bond_rank(bond_from_idx, snapshot)
             self.rank_dict[bond_from_idx] = 0
 
         if bond_from_rank < bond_from_max_rank:
             made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
-                                                       snapshot)
+                                                       snapshot,timestep)
             if made_bonds is True:
                 self.system.restore_snapshot(snapshot)

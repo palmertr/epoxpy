@@ -80,6 +80,7 @@ class EpoxySimulation(Simulation):
         self.log_curing = False
         self.curing_log_period = 1e5
         self.curing_log = []
+        self.bond_rank_log = []
 
         # for tests which compare simulation result against a benchmark
         # please see issue 6 for more details
@@ -214,6 +215,7 @@ class EpoxySimulation(Simulation):
         self.run_md()
 
         if self.bond is True:
+            self.bond_rank_log = bonding_callback.bond_rank_log
             bond_callback.disable()
             log.disable()
             if self.log_curing is True:

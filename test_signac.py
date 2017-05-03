@@ -28,8 +28,8 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     temp_temperature_profile.set_raw(temp_prof)
     temp_prof = temp_temperature_profile
     print('tempearture profile:{}'.format(temp_prof))
-    fig = temp_prof.get_figure()
-    fig.savefig(fig_path)
+    #fig = temp_prof.get_figure()
+    #fig.savefig(fig_path)
     in_path = os.path.join(job.workspace(), 'script_bckp.py')
     # shutil.copy(__file__, in_path)
 
@@ -47,16 +47,18 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     job.document['bond_percent'] = myEpoxySim.get_curing_percentage()
     log_path = os.path.join(job.workspace(), 'curing.log')
     np.savetxt(log_path, myEpoxySim.curing_log)
-
+    bond_rank_log_path = os.path.join(job.workspace(), 'bond_rank.log')
+    #print(myEpoxySim.bond_rank_log)
+    np.savetxt(bond_rank_log_path,myEpoxySim.bond_rank_log)
     curing_log = list(zip(*myEpoxySim.curing_log))
-    fig = plt.figure()
+    #fig = plt.figure()
     plt.xlabel('Time steps')
     plt.ylabel('Cure percent')
     plt.margins(x=0.1, y=0.1)
     plt.plot(curing_log[0], curing_log[1])
     plt.plot(curing_log[0], curing_log[1], 'or')
     fig_path = os.path.join(job.workspace(), 'curing_curve.png')
-    fig.savefig(fig_path)
+    #fig.savefig(fig_path)
 
 
 def init_job(state_point):
@@ -75,6 +77,7 @@ def init_job(state_point):
         fig.savefig(fig_path)
 
     print('initialize', job)
+    return job
 
 
 def run_simulation(state_point):
@@ -99,9 +102,10 @@ else:
     n_mul = 1.0
     curing_log_period = 1e1
 
-kTs = [0.1, 1, 2, 4, 6]
+kTs = [2]
 mixing_temperature = 2.0
 mixing_time = 3e4
+jobs = []
 
 for kT in kTs:
     flat_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mixing_temperature,
@@ -127,11 +131,8 @@ for kT in kTs:
           'dt': 1e-2,
           'density': 1.0,
           'activation_energy': 0.3}
-    init_job(sp)
+    job = init_job(sp)
+    jobs.append(job)
 
-project = signac.init_project('ABCTypeEpoxy', 'data/')
-jobs = project.find_jobs({'activation_energy': 0.3,
-                         'curing_log_period': curing_log_period})
 for job in jobs:
-    if len(job.sp.temp_prof) > 2:
-        run_simulation(job.statepoint())
+    run_simulation(job.statepoint())
