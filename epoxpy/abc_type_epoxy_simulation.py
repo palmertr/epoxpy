@@ -126,7 +126,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.group_a = hoomd.group.type(name='a-particles', type='A')
              self.group_b = hoomd.group.type(name='b-particles', type='B')
              self.group_c = hoomd.group.type(name='c-particles', type='C')
-                     self.msd_groups = [self.group_a, self.group_b, self.group_c]
+             self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
              nl = md.nlist.cell()
              self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
@@ -134,12 +134,11 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
              self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
             
-            if self.use_energy_penalty is True
+             if self.use_energy_penalty is True:
                  self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
                  self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
                  self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
-             
-            else:
+             else:
                  self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
                  self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
                  self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
@@ -147,7 +146,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic = md.bond.harmonic()
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-
 
     def setup_md_run(self):
              self.group_a = hoomd.group.type(name='a-particles', type='A')
@@ -164,25 +162,20 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
              self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
        
-             if self.use_energy_penalty is True
-                 self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
-       
+             if self.use_energy_penalty is True:
+                self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
+                self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
+                self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
              else:
-
-                 self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
+                self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
+                self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
+                self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
             
-            self.harmonic = md.bond.harmonic()
-            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-
-
-
+             self.harmonic = md.bond.harmonic()
+             self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+             self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
   
-  def get_curing_percentage(self):
+    def get_curing_percentage(self):
         snapshot = self.system.take_snapshot(bonds=True)
         n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
         possible_bonds = ((self.num_a * FreudBonding.MAX_A_BONDS) / 2) + ((self.num_b * FreudBonding.MAX_B_BONDS) / 2)
