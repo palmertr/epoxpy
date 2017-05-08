@@ -16,6 +16,7 @@ pipelines:
       - step:
           script:
             - echo "This script runs only on commit to freud_integration branch"
+<<<<<<< HEAD
             - ls
             - conda env create -f conda_env.yml
             - source activate epoxy_sim
@@ -31,3 +32,6 @@ pipelines:
             - cd epoxpy
             - pytest
 
+=======
+            - ls
+>>>>>>> c3b67c8032a5a7b4bc87463a5ab7b347cefb34af

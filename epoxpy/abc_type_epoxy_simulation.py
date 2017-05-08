@@ -34,7 +34,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, **kwargs):
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, use_energy_penalty=True, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
@@ -48,7 +48,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_a = None
         self.group_b = None
         self.group_c = None
-
+        self.use_energy_penalty = use_energy_penalty
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -123,48 +123,66 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
     def setup_mixing_run(self):
         # Mix Step/MD Setup
-        self.group_a = hoomd.group.type(name='a-particles', type='A')
-        self.group_b = hoomd.group.type(name='b-particles', type='B')
-        self.group_c = hoomd.group.type(name='c-particles', type='C')
-        self.msd_groups = [self.group_a, self.group_b, self.group_c]
+             self.group_a = hoomd.group.type(name='a-particles', type='A')
+             self.group_b = hoomd.group.type(name='b-particles', type='B')
+             self.group_c = hoomd.group.type(name='c-particles', type='C')
+                     self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
-        nl = md.nlist.cell()
-        self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
-        self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+             nl = md.nlist.cell()
+             self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
+             self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
+             self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+            
+            if self.use_energy_penalty is True
+                 self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
+             
+            else:
+                 self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
 
-        self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
+             self.harmonic = md.bond.harmonic()
+             self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+             self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-        self.harmonic = md.bond.harmonic()
-        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
     def setup_md_run(self):
-        self.group_a = hoomd.group.type(name='a-particles', type='A')
-        self.group_b = hoomd.group.type(name='b-particles', type='B')
-        self.group_c = hoomd.group.type(name='c-particles', type='C')
-        self.msd_groups = [self.group_a, self.group_b, self.group_c]
-        nl = md.nlist.cell()
-        profile = self.temp_prof.get_profile()
-        print('temperature profile {}'.format(profile.points))
-        self.dpd.set_params(kT=profile)
-        self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
-        self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+             self.group_a = hoomd.group.type(name='a-particles', type='A')
+             self.group_b = hoomd.group.type(name='b-particles', type='B')
+             self.group_c = hoomd.group.type(name='c-particles', type='C')
+             self.msd_groups = [self.group_a, self.group_b, self.group_c]
+            
+             nl = md.nlist.cell()
+             profile = self.temp_prof.get_profile()
+             print('temperature profile {}'.format(profile.points))
+             self.dpd.set_params(kT=profile)
+             self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
+             self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
+             self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
+       
+             if self.use_energy_penalty is True
+                 self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
+       
+             else:
 
-        self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
+                 self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
+            
+            self.harmonic = md.bond.harmonic()
+            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-        self.harmonic = md.bond.harmonic()
-        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-    def get_curing_percentage(self):
+
+  
+  def get_curing_percentage(self):
         snapshot = self.system.take_snapshot(bonds=True)
         n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
         possible_bonds = ((self.num_a * FreudBonding.MAX_A_BONDS) / 2) + ((self.num_b * FreudBonding.MAX_B_BONDS) / 2)
