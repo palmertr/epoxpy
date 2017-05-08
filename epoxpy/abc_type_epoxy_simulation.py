@@ -134,9 +134,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
         self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
 
-        self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-        self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
 
         self.harmonic = md.bond.harmonic()
         self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
@@ -156,9 +156,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
         self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
 
-        self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-        self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
 
         self.harmonic = md.bond.harmonic()
         self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
