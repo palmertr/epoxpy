@@ -6,6 +6,8 @@ from hoomd import md
 from hoomd import deprecated
 import mbuild as mb
 import os
+import numpy as np
+from collections import Counter
 
 
 class ABCTypeEpoxySimulation(EpoxySimulation):
@@ -175,3 +177,15 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
     def calculate_curing_percentage(self, step):
         bond_percent = self.get_curing_percentage()
         self.curing_log.append((step, bond_percent))
+        
+        bond_ranks = self.bonding.rank_dict.values()
+        keys = list(Counter(bond_ranks).keys())
+        values = list(Counter(bond_ranks).values())
+        row = np.zeros(6)
+        for i in range(0, 5):
+            if i in keys:
+                row[i+1] = values[keys.index(i)]
+        row[0] = step
+        row = [row]
+        with open(os.path.join(self.output_dir, self.bond_rank_hist_file), 'ab') as f_handle:
+            np.savetxt(f_handle, row, delimiter=',')

@@ -7,6 +7,7 @@ from hoomd import deprecated
 from hoomd import dump
 from abc import ABCMeta, abstractmethod
 import random
+import os, errno
 
 
 class EpoxySimulation(Simulation):
@@ -68,6 +69,8 @@ class EpoxySimulation(Simulation):
         self.dt = dt
         self.density = density
         self.activation_energy = activation_energy
+        self.bonding = None
+        self.bond_rank_hist_file = 'bond_rank_hist.log'
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
@@ -119,6 +122,14 @@ class EpoxySimulation(Simulation):
         else:
             hoomd.context.initialize()
 
+    @staticmethod
+    def silent_remove(filename):
+        try:
+            os.remove(filename)
+        except OSError as e:  # this would be "except OSError, e:" before Python 2.6
+            if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
+                raise  # re-raise exception if a different error occurred
+
     @abstractmethod
     def get_curing_percentage(self, step):
         pass
@@ -144,6 +155,7 @@ class EpoxySimulation(Simulation):
                  overwrite=True, static=['attribute'])
         deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write, overwrite=True,
                                filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
+        self.silent_remove(os.path.join(self.output_dir, self.bond_rank_hist_file))
 
     def run_mixing(self):
         md.integrate.mode_standard(dt=self.dt)
@@ -201,12 +213,12 @@ class EpoxySimulation(Simulation):
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
             if self.legacy_bonding is True:
-                bonding_callback = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
+                self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
                                                  activation_energy=self.activation_energy)
             else:
-                bonding_callback = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
+                self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
                                                 activation_energy=self.activation_energy)
-            bond_callback = hoomd.analyze.callback(callback=bonding_callback, period=self.bond_period)
+            bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
 
             if self.log_curing is True:
                 curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
@@ -215,7 +227,6 @@ class EpoxySimulation(Simulation):
         self.run_md()
 
         if self.bond is True:
-            self.bond_rank_log = bonding_callback.bond_rank_log
             bond_callback.disable()
             log.disable()
             if self.log_curing is True:

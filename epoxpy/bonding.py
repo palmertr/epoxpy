@@ -171,8 +171,6 @@ class FreudBonding(Bonding):
                         bond_to_rank = 0#self.get_bond_rank(n_idx, snapshot)
                         self.rank_dict[n_idx] = 0
 
-                    self.bond_rank_log.append([p_typeid, bond_to_rank, time_step])
-                    
                     if bond_to_rank < bond_to_max_rank:
                         if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank):
                             self.make_bond(bond_from_idx, n_idx, snapshot)
@@ -212,8 +210,6 @@ class FreudBonding(Bonding):
         if bond_from_rank < 0:  # -1 is the default value returned when id is not in dict.
             bond_from_rank = 0#self.get_bond_rank(bond_from_idx, snapshot)
             self.rank_dict[bond_from_idx] = 0
-
-        self.bond_rank_log.append([bond_from_typeid, bond_from_rank, timestep])
 
         if bond_from_rank < bond_from_max_rank:
             made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
