@@ -51,7 +51,7 @@ class Bonding(object):
         return np.sqrt(dr[0]**2+dr[1]**2+dr[2]**2)
 
     @staticmethod
-    def bond_test(kT, delta_e, bond_rank):
+    def bond_test(kT, delta_e, bond_rank, sec_bond_weight=500):
         # No idea if this is thread safe, watch out for MPI gotchas
         # Should be able to to tune rate with delta_e and kT
         # delta_e = 1
@@ -60,7 +60,7 @@ class Bonding(object):
         # issues
         weight = 1
         if bond_rank >= 1:
-            weight = 500
+            weight = sec_bond_weight
         if mb_stats / float(weight) > random.random():
             return True
         else:
