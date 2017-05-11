@@ -14,7 +14,7 @@ def get_status(job):
     status = 'init'
     if job.isfile('final.hoomdxml') and job.isfile('out.log'):
         status = 'job-computed'
-    elif job.isfile('temperature_profile.png'):
+    elif 'temp_prof' in job.sp:
         status = 'temperature-profile-created'
 
     return status
@@ -22,7 +22,7 @@ def get_status(job):
 
 def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, legacy_bonding, ext_init_struct_path,
                   exclude_mixing_in_output, log_curing, curing_log_period, log_write, dcd_write, job, dt, density,
-                  bond_period, activation_energy):
+                  bond_period, activation_energy, sec_bond_weight):
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -39,7 +39,8 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            exclude_mixing_in_output=exclude_mixing_in_output, log_curing=log_curing,
                                            curing_log_period=curing_log_period, log_write=log_write,
                                            dcd_write=dcd_write, output_dir=job.workspace(), dt=dt, density=density,
-                                           bond_period=bond_period, activation_energy=activation_energy)
+                                           bond_period=bond_period, activation_energy=activation_energy,
+                                           sec_bond_weight=sec_bond_weight)
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
     mySingleJobForEpoxy.execute()
@@ -73,21 +74,21 @@ def init_job(state_point):
         temp_temperature_profile.set_raw(job.sp.temp_prof)
         temp_prof = temp_temperature_profile
         print('tempearture profile:{}'.format(temp_prof))
-        fig = temp_prof.get_figure()
-        fig.savefig(fig_path)
+        #fig = temp_prof.get_figure()
+        #fig.savefig(fig_path)
 
     print('initialize', job)
     return job
 
 
-def run_simulation(state_point):
+def run_simulation(state_point, Force=False):
     project = signac.init_project('ABCTypeEpoxy', 'data/')
     job = project.open_job(state_point)
     job.init()
     print('initialize', job)
     job_status = get_status(job)
     print('job status:{}'.format(job_status))
-    if job_status == 'temperature-profile-created':
+    if job_status == 'temperature-profile-created' or Force:
         run_epoxy_sim(job=job, **job.statepoint())
 
 
@@ -98,12 +99,12 @@ if long_simulation:
     n_mul = 1000.0
     curing_log_period = 1e5
 else:
-    time_scale = 10
+    time_scale = 2000
     n_mul = 1.0
-    curing_log_period = 1e1
+    curing_log_period = 1e4
 
-kTs = [2]
-mixing_temperature = 2.0
+kTs = [30]
+mixing_temperature = 20.0
 mixing_time = 3e4
 jobs = []
 
@@ -130,9 +131,10 @@ for kT in kTs:
           'bond_period': 1e1,
           'dt': 1e-2,
           'density': 1.0,
-          'activation_energy': 0.3}
+          'activation_energy': 0.3,
+          'sec_bond_weight': 500}
     job = init_job(sp)
     jobs.append(job)
 
 for job in jobs:
-    run_simulation(job.statepoint())
+    run_simulation(job.statepoint(), Force=True)

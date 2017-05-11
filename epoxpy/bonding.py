@@ -11,7 +11,7 @@ class Bonding(object):
     MAX_A_BONDS = 4
     MAX_B_BONDS = 2
 
-    def __init__(self, system, groups, log, cut_off_dist=1.0, activation_energy=0.1):
+    def __init__(self, system, groups, log, cut_off_dist=1.0, activation_energy=0.1, sec_bond_weight=500):
         self.system = system
         self.groups = groups
         self.log = log
@@ -21,6 +21,7 @@ class Bonding(object):
         self.get_rank = self.rank_dict.get
         self.cut_off_dist = cut_off_dist
         self.bond_rank_log = []
+        self.sec_bond_weight = sec_bond_weight
 
     def __call__(self, step):
         self.find_pair(step)
@@ -82,7 +83,8 @@ class LegacyBonding(Bonding):
                     self.rank_dict[bond_to_idx] = 0
 
                 if bond_to_rank < bond_to_max_rank:
-                    if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank):
+                    if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank,
+                                      sec_bond_weight=self.sec_bond_weight):
                         # bond_test
                         self.make_bond(bond_from_idx, bond_to_idx, snapshot)
                         made_bonds = True
@@ -143,8 +145,9 @@ class LegacyBonding(Bonding):
 
 
 class FreudBonding(Bonding):
-    def __init__(self, system, groups, log, activation_energy):
-        Bonding.__init__(self, system=system, groups=groups, log=log, activation_energy=activation_energy)
+    def __init__(self, system, groups, log, activation_energy, sec_bond_weight):
+        Bonding.__init__(self, system=system, groups=groups, log=log, activation_energy=activation_energy,
+                         sec_bond_weight=sec_bond_weight)
         # create freud nearest neighbor object
         # set number of neighbors
         self.n_neigh = 6
@@ -153,7 +156,7 @@ class FreudBonding(Bonding):
         snapshot = self.system.take_snapshot()
         self.fbox = box.Box(Lx=snapshot.box.Lx, Ly=snapshot.box.Ly, Lz=snapshot.box.Lz)
 
-    def find_neighbours_and_bond(self, bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type, snapshot,
+    def find_neighbours_and_bond(self, bond_from_idx, bond_from_rank, bond_from_type, bond_to_max_rank, bond_to_type, snapshot,
                                  time_step):
         made_bonds = False
         # compute nearest neighbors for 6 nearest neighbors
@@ -172,7 +175,8 @@ class FreudBonding(Bonding):
                         self.rank_dict[n_idx] = 0
 
                     if bond_to_rank < bond_to_max_rank:
-                        if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank):
+                        if self.bond_test(self.log.query('temperature'), self.activation_energy, bond_to_rank,
+                                          sec_bond_weight=self.sec_bond_weight):
                             self.make_bond(bond_from_idx, n_idx, snapshot)
                             made_bonds = True
                             self.rank_dict[bond_from_idx] += 1
@@ -212,7 +216,7 @@ class FreudBonding(Bonding):
             self.rank_dict[bond_from_idx] = 0
 
         if bond_from_rank < bond_from_max_rank:
-            made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_type, bond_to_max_rank, bond_to_type,
+            made_bonds = self.find_neighbours_and_bond(bond_from_idx, bond_from_rank, bond_from_type, bond_to_max_rank, bond_to_type,
                                                        snapshot,timestep)
             if made_bonds is True:
                 self.system.restore_snapshot(snapshot)
