@@ -83,7 +83,7 @@ class TestLegacyBonding(BaseTest):
         import epoxpy.abc_type_epoxy_simulation as es
         import epoxpy.temperature_profile_builder as tpb
         import os
-        
+     
         mix_time = 3e4
         mix_kt = 2.0
         cure_kt = 2.0
@@ -103,6 +103,6 @@ class TestLegacyBonding(BaseTest):
         possible_bonds = myEpoxySim.total_possible_bonds()
         expected_possible_bonds = 40000 #becuase n_mul is 1000.0 and 10,000 A particles and 20,000 B particles can make a maximum of 40,000 bonds   
         assert(possible_bonds == expected_possible_bonds)
-
-
-
+        curing_percent = myEpoxySim.get_curing_percentage()
+        expected_curing_percent = 0 
+        assert(curing_percent == expected_curing_percent) 

@@ -180,15 +180,17 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
    
     def total_possible_bonds(self):
         if self.num_b * FreudBonding.MAX_B_BONDS > self.num_a * FreudBonding.MAX_A_BONDS:
-            possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS)
+           possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS)
         else:
             possible_bonds = (self.num_b * FreudBonding.MAX_B_BONDS)
         return possible_bonds
 
     def get_curing_percentage(self):
-        snapshot = self.system.take_snapshot(bonds=True)
-        n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
-        possible_bonds = total_possible_bonds()
+        n_bonds = 0
+        if self.system is not None: 
+            snapshot = self.system.take_snapshot(bonds=True)
+            n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
+        possible_bonds = self.total_possible_bonds()
         bond_percent = (n_bonds / possible_bonds) * 100.
         print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
         return bond_percent
