@@ -53,16 +53,12 @@ class Bonding(object):
 
     @staticmethod
     def bond_test(kT, delta_e, bond_rank, sec_bond_weight=500):
-        # No idea if this is thread safe, watch out for MPI gotchas
-        # Should be able to to tune rate with delta_e and kT
-        # delta_e = 1
         mb_stats = np.exp(-delta_e / kT)
-        # Divides by bond rank to make it less probable, add one to prevent rank 0
-        # issues
-        weight = 1
         if bond_rank >= 1:
-            weight = sec_bond_weight
-        if mb_stats / float(weight) > random.random():
+            #the activation energy for secondary bonds are scaled up, thereby
+            #making it less probable.
+            mb_stats = np.exp(-delta_e*sec_bond_weight/ kT)
+        if mb_stats > random.random():
             return True
         else:
             return False
