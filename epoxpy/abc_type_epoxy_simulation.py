@@ -36,8 +36,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, sec_bond_weight=500, 
-                 use_energy_penalty=True, **kwargs):
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, sec_bond_weight=500,
+                 AA_interaction=1.0, AC_interaction=10.0, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
@@ -51,7 +51,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_a = None
         self.group_b = None
         self.group_c = None
-        self.use_energy_penalty = use_energy_penalty
+        self.AA_interaction = AA_interaction
+        self.AC_interaction = AC_interaction
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -133,18 +134,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
              nl = md.nlist.cell()
              self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
-             self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
-             self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
-            
-             if self.use_energy_penalty is True:
-                 self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
-             else:
-                 self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
-                 self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
+             self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
+
+             self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
 
              self.harmonic = md.bond.harmonic()
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
@@ -155,29 +151,25 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.group_b = hoomd.group.type(name='b-particles', type='B')
              self.group_c = hoomd.group.type(name='c-particles', type='C')
              self.msd_groups = [self.group_a, self.group_b, self.group_c]
-            
+
              nl = md.nlist.cell()
              profile = self.temp_prof.get_profile()
              print('temperature profile {}'.format(profile.points))
              self.dpd.set_params(kT=profile)
              self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
-             self.dpd.pair_coeff.set('A', 'A', A=1.0, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'B', A=1.0, gamma=1.0)
-             self.dpd.pair_coeff.set('C', 'C', A=1.0, gamma=1.0)
-       
-             if self.use_energy_penalty is True:
-                self.dpd.pair_coeff.set('A', 'B', A=10.0, gamma=1.0)
-                self.dpd.pair_coeff.set('A', 'C', A=10.0, gamma=1.0)
-                self.dpd.pair_coeff.set('B', 'C', A=10.0, gamma=1.0)
-             else:
-                self.dpd.pair_coeff.set('A', 'B', A=1.0, gamma=1.0)
-                self.dpd.pair_coeff.set('A', 'C', A=1.0, gamma=1.0)
-                self.dpd.pair_coeff.set('B', 'C', A=1.0, gamma=1.0)
-            
+
+             self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
+
+             self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
+
              self.harmonic = md.bond.harmonic()
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
-   
+
     def total_possible_bonds(self):
         if self.num_b * FreudBonding.MAX_B_BONDS > self.num_a * FreudBonding.MAX_A_BONDS:
            possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS)
@@ -187,7 +179,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
     def get_curing_percentage(self):
         n_bonds = 0
-        if self.system is not None: 
+        if self.system is not None:
             snapshot = self.system.take_snapshot(bonds=True)
             n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
         possible_bonds = self.total_possible_bonds()
