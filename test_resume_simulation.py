@@ -93,8 +93,3 @@ myEpoxySim = es.ResumeABCTypeEpoxySimulation(sim_name,mix_kt=mix_kt,mix_time=mix
 mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
 mySingleJobForEpoxy.execute()
 
-total_time = type_A_md_temp_profile.get_total_sim_time()
-gsd_write_period = myEpoxySim.dcd_write
-total_frames = int(round(total_time/gsd_write_period))
-print('total_frames:{}'.format(total_frames))
-
