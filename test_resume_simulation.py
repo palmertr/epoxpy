@@ -92,4 +92,4 @@ myEpoxySim = es.ResumeABCTypeEpoxySimulation(sim_name,mix_kt=mix_kt,mix_time=mix
 
 mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
 mySingleJobForEpoxy.execute()
-
+print('Done!')
