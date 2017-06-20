@@ -208,10 +208,17 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         for p in self.group_a:
             group_a_idx.append(p.tag)
         #print(group_a_idx)
+        group_b_idx = []
+        for p in self.group_b:
+            group_b_idx.append(p.tag)
+        #print(group_b_idx)
+	
         dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_a_idx]
         keys = (list(Counter(dic_vals).keys()))
         values = (list(Counter(dic_vals).values()))
-        row = np.zeros(4)
+        #print(keys)
+        #print(values)
+        row = np.zeros(5)
         for i in range(0, 4):
             if i + 1 in keys:
                 row[i] = values[keys.index(i + 1)]
@@ -221,7 +228,15 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         s_bonds = (100. * this_row[1]) / self.num_a
         t_bonds = (100. * this_row[2]) / self.num_a
         q_bonds = (100. * this_row[3]) / self.num_a
+        
+        dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_b_idx]
+        keys = (list(Counter(dic_vals).keys()))
+        values = (list(Counter(dic_vals).values()))
+        print(keys)
+        print(values)
+        primary_b = values[keys.index(0)]
+        primary_b = (100. * primary_b) / self.num_b
 
-        row = [(step, bond_percent, p_bonds, s_bonds, t_bonds, q_bonds)]
+        row = [(step, bond_percent, p_bonds, s_bonds, t_bonds, q_bonds, primary_b)]
         with open(os.path.join(self.output_dir, self.bond_rank_hist_file), 'ab') as f_handle:
             np.savetxt(f_handle, row)
