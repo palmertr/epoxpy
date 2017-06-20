@@ -121,6 +121,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         elif file_path.endswith('.gsd'):
             raise ValueError('Reading the most recent frame from gsd file is not yet implemented!')
             self.system = hoomd.init.read_gsd(file_path, frame=0, time_step=time_step)
+        else:
+            raise ValueError('No such file as {} exist on disk!'.format(file_path))
         snapshot = self.system.take_snapshot(bonds=True)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
@@ -155,9 +157,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              nl = md.nlist.cell()
              profile = self.temp_prof.get_profile()
              print('temperature profile {}'.format(profile.points))
-             self.dpd.set_params(kT=profile)
              self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
-
+             self.dpd.set_params(kT=profile)
              self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
@@ -212,7 +213,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         for p in self.group_b:
             group_b_idx.append(p.tag)
         #print(group_b_idx)
-	
+
         dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_a_idx]
         keys = (list(Counter(dic_vals).keys()))
         values = (list(Counter(dic_vals).values()))
@@ -228,7 +229,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         s_bonds = (100. * this_row[1]) / self.num_a
         t_bonds = (100. * this_row[2]) / self.num_a
         q_bonds = (100. * this_row[3]) / self.num_a
-        
+
         dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_b_idx]
         keys = (list(Counter(dic_vals).keys()))
         values = (list(Counter(dic_vals).values()))

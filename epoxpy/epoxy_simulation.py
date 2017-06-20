@@ -25,13 +25,13 @@ class EpoxySimulation(Simulation):
           output_dir: default is the working directory
           bond     : boolean value denoting whether to run the bonding routine for A's and B's
           bond_period: time interval between calls to the bonding routine
-          
-          kwargs: These are parameters which might not be necessary from a user perspective. Includes parameters for 
+
+          kwargs: These are parameters which might not be necessary from a user perspective. Includes parameters for
           backward compatibility also.
                 legacy_bonding: boolean value indicating whether to use legacy bonding or frued bonding routine
                                 Default is "False"
-                exclude_mixing_in_output: boolean value indicating whether the initial mixing phase should appear 
-                                          in the output files. This may or may not be needed for analysis. 
+                exclude_mixing_in_output: boolean value indicating whether the initial mixing phase should appear
+                                          in the output files. This may or may not be needed for analysis.
                                           Default is "False"
                 init_file_name: Full path to the initial file being written to disk during initialization. Please do
                                 not use this to initialize from an initial structure created externally. That is not
@@ -77,6 +77,7 @@ class EpoxySimulation(Simulation):
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
         self.exclude_mixing_in_output = False # PLEASE NOTE THAT THE TRAJECTORY CHANGES WHEN THIS IS CHANGED!!
+        self.resume_file_name = os.path.join(self.output_dir, 'final.hoomdxml')
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
         self.mixed_file_name = os.path.join(self.output_dir, 'mixed.hoomdxml')
         self.shrink_time = 1.0
