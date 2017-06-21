@@ -15,11 +15,11 @@ import random
 random.seed(1020)
 mix_time = 0
 mix_kt = 2.0
-time_scale = 100
+time_scale = 1e4
 temp_scale = 1
 cure_kt = 2.0
 nmul = 1.0
-log_period = 1e5
+log_period = 1e3
 dump_period = 1e2
 curing_log_period = 1e1
 cure_time = (500*time_scale)+mix_time
@@ -58,7 +58,7 @@ else:
         sim_name = 'freud_bonding'
 
 sim_name = '{}_ts_{}_nmul_{}'.format(sim_name, time_scale, nmul)
-#sim_name = 'benchmark'
+sim_name = 'benchmark'
 print('sim_name', sim_name)
 fig_path = os.path.join(sim_name, 'type_A_temp_profile.png')
 
@@ -74,7 +74,7 @@ datadir = './benchmark'
 expected_gsd_file = os.path.join(datadir, 'data.gsd')
 print('expected gsd file path:{}'.format(expected_gsd_file))
 
-#initial_structure_path=None
+initial_structure_path=None
 out_dir = str(tmpdir)
 out_dir = os.path.join(out_dir, sim_name)
 print('out_dir', out_dir)
