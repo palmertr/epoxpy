@@ -6,9 +6,9 @@ channels:
 - glotzer
 - defaults
 dependencies:
-- python
+- python=3.5
 - hoomd
-- mbuild
+- mbuild=0.6.1
 - freud
 - matplotlib
 - gsd
