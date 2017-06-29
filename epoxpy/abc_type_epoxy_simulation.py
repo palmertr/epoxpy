@@ -37,7 +37,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1, sec_bond_weight=500,
+                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0,
+                 activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=1.0, AC_interaction=10.0, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
@@ -122,6 +123,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         elif file_path.endswith('.gsd'):
             raise ValueError('Reading the most recent frame from gsd file is not yet implemented!')
             self.system = hoomd.init.read_gsd(file_path, frame=0, time_step=time_step)
+        else:
+            raise ValueError('No such file as {} exist on disk!'.format(file_path))
         snapshot = self.system.take_snapshot(bonds=True)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
@@ -156,9 +159,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              nl = md.nlist.cell()
              profile = self.temp_prof.get_profile()
              print('temperature profile {}'.format(profile.points))
-             self.dpd.set_params(kT=profile)
              self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
-
+             self.dpd.set_params(kT=profile)
              self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
@@ -209,19 +211,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         bond_percent = self.get_curing_percentage()
         self.curing_log.append((step, bond_percent))
 
-        #bond_ranks = self.bonding.rank_dict.values()
-        #keys = list(Counter(bond_ranks).keys())
-        #values = list(Counter(bond_ranks).values())
-        #row = np.zeros(6)
-        #for i in range(0, 5):
-        #    if i in keys:
-        #        row[i+1] = values[keys.index(i)]
-        #row[0] = step
-        #row = [row]
-        #with open(os.path.join(self.output_dir, self.bond_rank_hist_file), 'ab') as f_handle:
-        #    np.savetxt(f_handle, row, delimiter=',')
-
-
         group_a_idx = []
         for p in self.group_a:
             group_a_idx.append(p.tag)
@@ -230,7 +219,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         for p in self.group_b:
             group_b_idx.append(p.tag)
         #print(group_b_idx)
-	
+
         dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_a_idx]
         keys = (list(Counter(dic_vals).keys()))
         values = (list(Counter(dic_vals).values()))
@@ -246,13 +235,16 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         s_bonds = (100. * this_row[1]) / self.num_a
         t_bonds = (100. * this_row[2]) / self.num_a
         q_bonds = (100. * this_row[3]) / self.num_a
-        
+
         dic_vals = [self.bonding.rank_dict.get(k, 0) for k in group_b_idx]
         keys = (list(Counter(dic_vals).keys()))
         values = (list(Counter(dic_vals).values()))
-        print(keys)
-        print(values)
-        primary_b = values[keys.index(0)]
+        #print(keys)
+        #print(values)
+        if 0 in keys:
+            primary_b = values[keys.index(0)]
+        else:
+            primary_b = 0
         primary_b = (100. * primary_b) / self.num_b
 
         row = [(step, bond_percent, p_bonds, s_bonds, t_bonds, q_bonds, primary_b)]
