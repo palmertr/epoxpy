@@ -76,6 +76,7 @@ class EpoxySimulation(Simulation):
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
+        self.use_dybond_plugin = True
         self.exclude_mixing_in_output = False # PLEASE NOTE THAT THE TRAJECTORY CHANGES WHEN THIS IS CHANGED!!
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
         self.mixed_file_name = os.path.join(self.output_dir, 'mixed.hoomdxml')
@@ -212,21 +213,10 @@ class EpoxySimulation(Simulation):
         print('Running MD for {}'.format(self.simulation_name))
         self.setup_md_run()
         self.configure_outputs()
-        if self.bond is True:
-            log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
-            if self.legacy_bonding is True:
-                self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
-                                                 activation_energy=self.activation_energy,
-                                             sec_bond_weight=self.sec_bond_weight)
-            else:
-                self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
-                                                activation_energy=self.activation_energy,
-                                            sec_bond_weight=self.sec_bond_weight)
-            bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
 
-            if self.log_curing is True:
-                curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
-                                                         period=self.curing_log_period, phase=-1)
+        if self.log_curing is True:
+            curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
+                                                     period=self.curing_log_period, phase=-1)
         hoomd.util.quiet_status()
         self.run_md()
 

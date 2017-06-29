@@ -2,6 +2,7 @@ from epoxpy.epoxy_simulation import EpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 from epoxpy.bonding import FreudBonding
 import hoomd
+import hoomd.dybond_plugin as db
 from hoomd import md
 from hoomd import deprecated
 import mbuild as mb
@@ -170,6 +171,23 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
+             if self.bond is True:
+                 log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
+                 if self.use_dybond_plugin is True:
+                    updater = db.update.dybond(nl, temperature_group=hoomd.group.all(), bond_type='A-B', rcut=1.0, period=10)
+                    updater.set_params(bond_type='A-B',A='A',A_fun_groups=4,B='B',B_fun_groups=2,Ea=1.0,alpha=2.0)
+                 else:
+                    if self.legacy_bonding is True:
+                        self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
+                                                     activation_energy=self.activation_energy,
+                                                 sec_bond_weight=self.sec_bond_weight)
+                    else:
+                        self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
+                                                    activation_energy=self.activation_energy,
+                                                sec_bond_weight=self.sec_bond_weight)
+                    bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
+
+             
     def total_possible_bonds(self):
         if self.num_b * FreudBonding.MAX_B_BONDS > self.num_a * FreudBonding.MAX_A_BONDS:
            possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS)
