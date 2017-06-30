@@ -73,6 +73,7 @@ class EpoxySimulation(Simulation):
         self.sec_bond_weight = sec_bond_weight
         self.bonding = None
         self.bond_rank_hist_file = 'bond_rank_hist.log'
+        self.log_bond_temp = None
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
@@ -215,18 +216,18 @@ class EpoxySimulation(Simulation):
         self.setup_md_run()
         self.configure_outputs()
 
-        if self.log_curing is True:
+        if self.log_curing is True and self.use_dybond_plugin is False:
             curing_callback = hoomd.analyze.callback(callback=self.calculate_curing_percentage,
                                                      period=self.curing_log_period, phase=-1)
         hoomd.util.quiet_status()
         self.run_md()
 
         if self.bond is True:
-            bond_callback.disable()
-            log.disable()
-            if self.log_curing is True:
-                curing_callback.disable()
-
+            if self.use_dybond_plugin is False:
+                bond_callback.disable()
+                if self.log_curing is True and self.use_dybond_plugin is False:
+                    curing_callback.disable()
+                self.log_bond_temp.disable()
     def execute(self):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()

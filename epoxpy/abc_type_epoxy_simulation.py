@@ -12,6 +12,8 @@ from collections import Counter
 
 
 class ABCTypeEpoxySimulation(EpoxySimulation):
+    MAX_A_BONDS=4
+    MAX_B_BONDS=2#This ratio is stoichiometric by default (see num_a and num_b defaults)
     """Simulations class for setting initial condition and force field specific to the ABC coarse grained Epoxy blend.
           This simulation consists of three particle types (A, B and C). A, B and C particles are created in the
           ratio 10, 20 and 2 by default
@@ -174,17 +176,19 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
              if self.bond is True:
-                 log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
+                 self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
                  if self.use_dybond_plugin is True:
-                    updater = db.update.dybond(nl, temperature_group=hoomd.group.all(), bond_type='A-B', rcut=1.0, period=10)
-                    updater.set_params(bond_type='A-B',A='A',A_fun_groups=4,B='B',B_fun_groups=2,Ea=1.0,alpha=2.0)
+                    updater = db.update.dybond(nl, group=hoomd.group.all(), period=self.bond_period)
+                    updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
+                                       B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
+                                       rcut=1.0,alpha=self.sec_bond_weight)
                  else:
                     if self.legacy_bonding is True:
-                        self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
+                        self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
                                                      activation_energy=self.activation_energy,
                                                  sec_bond_weight=self.sec_bond_weight)
                     else:
-                        self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
+                        self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
                                                     activation_energy=self.activation_energy,
                                                 sec_bond_weight=self.sec_bond_weight)
                     bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
@@ -207,6 +211,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
         return bond_percent
 
+    '''deprecated: Used with freud and legacy bonding
+    '''
     def calculate_curing_percentage(self, step):
         bond_percent = self.get_curing_percentage()
         self.curing_log.append((step, bond_percent))
