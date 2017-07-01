@@ -1,6 +1,6 @@
 from epoxpy.epoxy_simulation import EpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
-from epoxpy.bonding import FreudBonding
+from epoxpy.bonding import LegacyBonding, FreudBonding
 import hoomd
 import hoomd.dybond_plugin as db
 from hoomd import md
@@ -191,7 +191,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                         self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
                                                     activation_energy=self.activation_energy,
                                                 sec_bond_weight=self.sec_bond_weight)
-                    bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
+                    self.bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
 
              
     def total_possible_bonds(self):

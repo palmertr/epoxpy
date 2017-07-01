@@ -1,6 +1,5 @@
 import os
 from epoxpy.simulation import Simulation
-from epoxpy.bonding import LegacyBonding, FreudBonding
 import hoomd
 from hoomd import md
 from hoomd import deprecated
@@ -74,6 +73,7 @@ class EpoxySimulation(Simulation):
         self.bonding = None
         self.bond_rank_hist_file = 'bond_rank_hist.log'
         self.log_bond_temp = None
+        self.bond_callback = None
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
@@ -224,7 +224,7 @@ class EpoxySimulation(Simulation):
 
         if self.bond is True:
             if self.use_dybond_plugin is False:
-                bond_callback.disable()
+                self.bond_callback.disable()
                 if self.log_curing is True and self.use_dybond_plugin is False:
                     curing_callback.disable()
                 self.log_bond_temp.disable()
