@@ -74,6 +74,7 @@ class EpoxySimulation(Simulation):
         self.bond_rank_hist_file = 'bond_rank_hist.log'
         self.log_bond_temp = None
         self.bond_callback = None
+        self.dybond_updater = None
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False
@@ -151,9 +152,13 @@ class EpoxySimulation(Simulation):
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'start.hoomdxml'), all=True)
+        quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy", 
+                    "temperature", "pressure", "bond_harmonic_energy"]
+        if self.dybond_updater is not None:
+            quantities.append("bond_percent")
+        print('quantitites being logged:',quantities)
         hoomd.analyze.log(filename=os.path.join(self.output_dir, 'out.log'),
-                          quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy",
-                                      "temperature", "pressure", "bond_harmonic_energy"], period=self.log_write,
+                          quantities=quantities, period=self.log_write,
                           header_prefix='#', overwrite=True)
         dump.dcd(filename=os.path.join(self.output_dir, 'traj.dcd'), period=self.dcd_write, overwrite=True)
         dump.gsd(filename=os.path.join(self.output_dir, 'data.gsd'), period=self.dcd_write, group=hoomd.group.all(),

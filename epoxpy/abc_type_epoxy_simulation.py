@@ -178,8 +178,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              if self.bond is True:
                  self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
                  if self.use_dybond_plugin is True:
-                    updater = db.update.dybond(nl, group=hoomd.group.all(), period=self.bond_period)
-                    updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
+                    self.dybond_updater = db.update.dybond(nl, group=hoomd.group.all(), period=self.bond_period)
+                    self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
                                        rcut=1.0,alpha=self.sec_bond_weight)
                  else:
