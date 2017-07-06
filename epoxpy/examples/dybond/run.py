@@ -98,20 +98,21 @@ long_simulation = False
 
 if long_simulation:
     time_scale = 10000
+    mixing_time = 5e4
     n_mul = 1000.0
     curing_log_period = 1e5
     log_write_period = 1e5
     data_write_period = 1e5
 else:
     time_scale = 10
-    n_mul = 10.0
+    mixing_time = 100
+    n_mul = 100.0
     curing_log_period = 1
     log_write_period = 1
     data_write_period = 1
 
 kTs = [1.0]
 mixing_temperature = 20.0
-mixing_time = 5e4
 jobs = []
 
 for kT in kTs:
