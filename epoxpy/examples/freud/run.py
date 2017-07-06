@@ -100,14 +100,18 @@ if long_simulation:
     time_scale = 10000
     n_mul = 1000.0
     curing_log_period = 1e5
+    log_write_period = 1e5
+    data_write_period = 1e5
 else:
     time_scale = 10
     n_mul = 10.0
     curing_log_period = 1
+    log_write_period = 1
+    data_write_period = 1
 
 kTs = [1.0]
 mixing_temperature = 20.0
-mixing_time = 3e4
+mixing_time = 5e4
 jobs = []
 
 for kT in kTs:
@@ -129,13 +133,13 @@ for kT in kTs:
           'exclude_mixing_in_output': False,
           'log_curing': True,
           'curing_log_period': curing_log_period,
-          'log_write': 1,
-          'dcd_write': 1,
+          'log_write': log_write_period,
+          'dcd_write': data_write_period,
           'bond_period': 1e1,
           'dt': 1e-2,
           'density': 1.0,
           'activation_energy': 1.0,
-          'sec_bond_weight': 1.0}
+          'sec_bond_weight': 2.0}
     job = init_job(sp)
     jobs.append(job)
 

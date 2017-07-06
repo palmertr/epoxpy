@@ -48,7 +48,7 @@ class EpoxySimulation(Simulation):
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
                  bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1,
-                 sec_bond_weight=500.0):
+                 sec_bond_weight=500.0, stop_bonding_after=None):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
@@ -75,6 +75,8 @@ class EpoxySimulation(Simulation):
         self.log_bond_temp = None
         self.bond_callback = None
         self.dybond_updater = None
+        self.stop_bonding_after = stop_bonding_after
+        self.stop_dybond_updater_callback = None
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
         self.legacy_bonding = False

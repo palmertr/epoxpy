@@ -41,11 +41,12 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
                  bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
-                 AA_interaction=1.0, AC_interaction=10.0, **kwargs):
+                 AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
-                                 activation_energy=activation_energy, sec_bond_weight=sec_bond_weight)
+                                 activation_energy=activation_energy, sec_bond_weight=sec_bond_weight,
+                                 stop_bonding_after=stop_bonding_after)
         self.num_a = num_a * n_mul
         self.num_b = num_b * n_mul
         self.num_c10 = num_c10 * n_mul
@@ -152,6 +153,12 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
+    def stop_dybond_updater(self):
+             if self.stop_dybond_updater_callback is not None:
+                 self.dybond_updater.disable() # first stop the updater
+                 self.stop_dybond_updater_callback.disable() # now stop the callback.
+             else:
+                 hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
     def setup_md_run(self):
              self.group_a = hoomd.group.type(name='a-particles', type='A')
              self.group_b = hoomd.group.type(name='b-particles', type='B')
@@ -182,6 +189,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                     self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
                                        rcut=1.0,alpha=self.sec_bond_weight)
+                    if self.stop_bonding_after is not None:
+                        self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
+                                                                                   period=self.stop_bonding_after)
                  else:
                     if self.legacy_bonding is True:
                         self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,

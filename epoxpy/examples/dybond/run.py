@@ -22,9 +22,7 @@ def get_status(job):
 
 def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, legacy_bonding, ext_init_struct_path,
                   exclude_mixing_in_output, log_curing, curing_log_period, log_write, dcd_write, job, dt, density,
-                  bond_period, activation_energy, sec_bond_weight,
-                  #num_a, num_b,num_c10,
-                  use_dybond_plugin):
+                  bond_period, activation_energy, sec_bond_weight,use_dybond_plugin):
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -43,8 +41,6 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            dcd_write=dcd_write, output_dir=job.workspace(), dt=dt, density=density,
                                            bond_period=bond_period, activation_energy=activation_energy,
                                            sec_bond_weight=sec_bond_weight,
-                                           #num_a=num_a, num_b=num_b,
-                                           #num_c10=num_c10,
                                            use_dybond_plugin=use_dybond_plugin)
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
@@ -104,10 +100,14 @@ if long_simulation:
     time_scale = 10000
     n_mul = 1000.0
     curing_log_period = 1e5
+    log_write_period = 1e5
+    data_write_period = 1e5
 else:
     time_scale = 10
     n_mul = 10.0
     curing_log_period = 1
+    log_write_period = 1
+    data_write_period = 1
 
 kTs = [1.0]
 mixing_temperature = 20.0
@@ -133,8 +133,8 @@ for kT in kTs:
           'exclude_mixing_in_output': False,
           'log_curing': True,
           'curing_log_period': curing_log_period,
-          'log_write': 1e5,
-          'dcd_write': 1e5,
+          'log_write': log_write_period,
+          'dcd_write': data_write_period,
           'bond_period': 1e1,
           'dt': 1e-2,
           'density': 1.0,
