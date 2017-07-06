@@ -153,12 +153,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-    def stop_dybond_updater(self):
+    def stop_dybond_updater(self, timestep):
              if self.stop_dybond_updater_callback is not None:
                  self.dybond_updater.disable() # first stop the updater
                  self.stop_dybond_updater_callback.disable() # now stop the callback.
              else:
                  hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
+
     def setup_md_run(self):
              self.group_a = hoomd.group.type(name='a-particles', type='A')
              self.group_b = hoomd.group.type(name='b-particles', type='B')
