@@ -138,8 +138,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.group_c = hoomd.group.type(name='c-particles', type='C')
              self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
-             nl = md.nlist.cell()
-             self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=self.mix_kT, seed=0)
+             self.nl = md.nlist.cell()
+             self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=self.mix_kT, seed=0)
              self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
@@ -158,10 +158,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.group_c = hoomd.group.type(name='c-particles', type='C')
              self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
-             nl = md.nlist.cell()
+             self.nl = md.nlist.cell()
              profile = self.temp_prof.get_profile()
              print('temperature profile {}'.format(profile.points))
-             self.dpd = md.pair.dpd(r_cut=1.0, nlist=nl, kT=profile, seed=0)
+             self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=profile, seed=0)
              self.dpd.set_params(kT=profile)
              self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
              self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
@@ -178,7 +178,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              if self.bond is True:
                  self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
                  if self.use_dybond_plugin is True:
-                    self.dybond_updater = db.update.dybond(nl, group=hoomd.group.all(), period=self.bond_period)
+                    self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
                     self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
                                        rcut=1.0,alpha=self.sec_bond_weight)
