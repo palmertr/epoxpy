@@ -77,8 +77,11 @@ class EpoxySimulation(Simulation):
         self.dybond_updater = None
         self.stop_bonding_after = stop_bonding_after
         self.stop_dybond_updater_callback = None
+        self.nl = None
 
         # below are default developer arguments which can be set through kwargs in sub classes for testing.
+        self.nl_tuning = False
+        self.profile_run = False
         self.legacy_bonding = False
         self.use_dybond_plugin = True
         self.exclude_mixing_in_output = False # PLEASE NOTE THAT THE TRAJECTORY CHANGES WHEN THIS IS CHANGED!!
@@ -158,6 +161,9 @@ class EpoxySimulation(Simulation):
                     "temperature", "pressure", "bond_harmonic_energy"]
         if self.dybond_updater is not None:
             quantities.append("bond_percent")
+            #quantities.append("avg_num_failed_bonds")
+            #quantities.append("avg_num_neighbors")
+
         print('quantitites being logged:',quantities)
         hoomd.analyze.log(filename=os.path.join(self.output_dir, 'out.log'),
                           quantities=quantities, period=self.log_write,
@@ -181,7 +187,22 @@ class EpoxySimulation(Simulation):
     def run_md(self):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())
-        hoomd.run(self.md_time)
+        hoomd.run(self.md_time,profile=self.profile_run)
+        if self.nl_tuning:
+            print('-----------------Disabling bonding and starting neighbourlist tuning-------------------')
+            self.get_curing_percentage()
+            if self.bond:
+                if self.use_dybond_plugin:
+                    self.dybond_updater.disable()
+                else:
+                    self.bond_callback.disable
+            self.nl.tune(warmup=20000,
+                         r_min=0.01,
+                         r_max=2.00,
+                         jumps=10,
+                         steps=5000,
+                         set_max_check_period=False)
+
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'final.hoomdxml'), all=True)

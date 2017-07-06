@@ -22,7 +22,15 @@ def get_status(job):
 
 def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, legacy_bonding, ext_init_struct_path,
                   exclude_mixing_in_output, log_curing, curing_log_period, log_write, dcd_write, job, dt, density,
+<<<<<<< HEAD
                   bond_period, activation_energy, sec_bond_weight,use_dybond_plugin):
+=======
+                  bond_period, activation_energy, sec_bond_weight,
+                  #num_a, num_b,num_c10,
+                  use_dybond_plugin,
+                  profile_run,
+                  nl_tuning):
+>>>>>>> aaf4b5044273f0fab95b69ee77d6308113edaac9
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -41,7 +49,15 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            dcd_write=dcd_write, output_dir=job.workspace(), dt=dt, density=density,
                                            bond_period=bond_period, activation_energy=activation_energy,
                                            sec_bond_weight=sec_bond_weight,
+<<<<<<< HEAD
                                            use_dybond_plugin=use_dybond_plugin)
+=======
+                                           #num_a=num_a, num_b=num_b,
+                                           #num_c10=num_c10,
+                                           use_dybond_plugin=use_dybond_plugin,
+                                           profile_run=profile_run,
+                                           nl_tuning=nl_tuning)
+>>>>>>> aaf4b5044273f0fab95b69ee77d6308113edaac9
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
     mySingleJobForEpoxy.execute()
@@ -94,7 +110,7 @@ def run_simulation(state_point, Force=False):
         run_epoxy_sim(job=job, **job.statepoint())
 
 
-long_simulation = False
+long_simulation = True
 
 if long_simulation:
     time_scale = 10000
@@ -140,7 +156,9 @@ for kT in kTs:
           'dt': 1e-2,
           'density': 1.0,
           'activation_energy': 1.0,
-          'sec_bond_weight': 2.0}
+          'sec_bond_weight': 1.0,
+          'profile_run':True,
+          'nl_tuning':False}
     job = init_job(sp)
     jobs.append(job)
 
