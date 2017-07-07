@@ -115,9 +115,9 @@ if long_simulation:
     data_write_period = 1e5
     stop_bonding_after = None # timesteps after start of curing
 else:
-    time_scale = 10
+    time_scale = 300
     mixing_time = 100
-    n_mul = 100.0
+    n_mul = 20.0
     curing_log_period = 1
     log_write_period = 1
     data_write_period = 1
