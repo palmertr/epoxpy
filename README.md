@@ -36,3 +36,26 @@ pytest
 
 * Repo owner or admin
 * Other team members: stephenthomas1@boisestate.edu
+
+### Tips for Clusters ###
+
+## R2 ##
+
+
+```
+#!bash
+
+module use /scratch/mhenry/mike_modules/modulefiles/
+module load hoomd/dybond-hoomd
+```
+
+
+## Kestrel ##
+
+
+```
+#!bash
+
+module use /scratch/erjank_project/mike_modules/modulefiles/
+module load hoomd/2.1.7-dybond
+```
