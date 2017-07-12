@@ -7,7 +7,6 @@ channels:
 - defaults
 dependencies:
 - python=3.5
-- hoomd
 - mbuild=0.6.1
 - freud
 - matplotlib
