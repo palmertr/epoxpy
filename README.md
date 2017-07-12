@@ -45,8 +45,23 @@ pytest
 ```
 #!bash
 
+#!/bin/bash
+#SBATCH -p gpuq
+#SBATCH --job-name=epoxpy
+#SBATCH -n 14
+#SBATCH --output=out.o
+#SBATCH --mail-type=All
+#SBATCH --mail-user=YOUREMAIL
+#SBATCH --time=48:00:00
+#SBATCH --gres=gpu:1
+
+module purge
 module use /scratch/mhenry/mike_modules/modulefiles/
 module load hoomd/dybond-hoomd
+
+export PATH="/home/$USER/miniconda3/bin:$PATH" # Your conda path may be different
+source activate epoxpy_env
+python run.py
 ```
 
 
