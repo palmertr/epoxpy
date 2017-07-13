@@ -27,7 +27,7 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                   use_dybond_plugin,
                   profile_run,
                   nl_tuning,
-                  stop_bonding_after):
+                  stop_bonding_after_percent):
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -51,7 +51,7 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            use_dybond_plugin=use_dybond_plugin,
                                            profile_run=profile_run,
                                            nl_tuning=nl_tuning,
-                                           stop_bonding_after=stop_bonding_after)
+                                           stop_bonding_after_percent=stop_bonding_after_percent)
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
     mySingleJobForEpoxy.execute()
@@ -104,7 +104,7 @@ def run_simulation(state_point, Force=False):
         run_epoxy_sim(job=job, **job.statepoint())
 
 
-long_simulation = False
+long_simulation = True
 
 if long_simulation:
     time_scale = 10000
@@ -123,7 +123,7 @@ else:
     data_write_period = 1
     stop_bonding_after = None # timesteps after start of curing
 
-kTs = [1.0]
+kTs = [0.5]
 mixing_temperature = 20.0
 jobs = []
 
@@ -155,7 +155,7 @@ for kT in kTs:
           'sec_bond_weight': 1.0,
           'profile_run':True,
           'nl_tuning':False,
-          'stop_bonding_after':stop_bonding_after}#timesteps from start of curing
+          'stop_bonding_after_percent': None} # Percent to stop bonding
     job = init_job(sp)
     jobs.append(job)
 

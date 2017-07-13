@@ -41,7 +41,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
                  bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
-                 AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, **kwargs):
+                 AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, stop_bonding_after_percent=None, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
@@ -58,6 +58,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_c = None
         self.AA_interaction = AA_interaction
         self.AC_interaction = AC_interaction
+        self.stop_bonding_after_percent = stop_bonding_after_percent
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -159,6 +160,15 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  self.stop_dybond_updater_callback.disable() # now stop the callback.
              else:
                  hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
+    def percent_check(self, timestep):
+             curr_percent = self.percent_check_logger.query('bond_percent')
+             if curr_percent > self.stop_bonding_after_percent:
+                 self.dybond_updater.disable() # first stop the updater
+                 self.percent_check_callback.disable()
+                 self.percent_check_logger.disable()
+                 print("HIT OUR TARGET: {}".format(self.stop_bonding_after_percent))
+                 print("PERCENT REACHED: {}".format(curr_percent))
+
 
     def setup_md_run(self):
              self.group_a = hoomd.group.type(name='a-particles', type='A')
@@ -190,6 +200,11 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                     self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
                                        rcut=1.0,alpha=self.sec_bond_weight)
+                    if self.stop_bonding_after_percent is not None:
+                        self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent"], period = 1e4)
+                        self.percent_check_callback = hoomd.analyze.callback(callback=self.percent_check,
+                                                                                   period=1e4)
+
                     if self.stop_bonding_after is not None:
                         self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
                                                                                    period=self.stop_bonding_after)
