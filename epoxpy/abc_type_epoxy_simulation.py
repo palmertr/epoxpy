@@ -39,7 +39,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0,
+                 bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
@@ -58,6 +58,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_c = None
         self.AA_interaction = AA_interaction
         self.AC_interaction = AC_interaction
+        self.bond_radius = bond_radius
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -189,7 +190,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                     self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
                     self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
-                                       rcut=1.0,alpha=self.sec_bond_weight)
+                                       rcut=self.bond_radius,alpha=self.sec_bond_weight)
                     if self.stop_bonding_after is not None:
                         self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
                                                                                    period=self.stop_bonding_after)
