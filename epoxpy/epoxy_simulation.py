@@ -187,7 +187,9 @@ class EpoxySimulation(Simulation):
     def run_md(self):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())
-        hoomd.run(self.md_time,profile=self.profile_run)
+        hoomd.run(self.md_time)
+        if self.profile_run:
+            hoomd.run(int(self.md_time*0.1),profile=True)# run 10% of the simulation time to calculate performance
         if self.nl_tuning:
             print('-----------------Disabling bonding and starting neighbourlist tuning-------------------')
             self.get_curing_percentage()
