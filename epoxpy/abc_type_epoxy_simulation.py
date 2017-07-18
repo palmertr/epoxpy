@@ -39,7 +39,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0,
+                 bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, stop_bonding_after_percent=None, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
@@ -59,6 +59,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.AA_interaction = AA_interaction
         self.AC_interaction = AC_interaction
         self.stop_bonding_after_percent = stop_bonding_after_percent
+        self.bond_radius = bond_radius
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -165,7 +166,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              else:
                  hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
     def percent_check(self, timestep):
-             curr_percent = self.percent_check_logger.query('bond_percent')
+             curr_percent = self.percent_check_logger.query('bond_percent(A-B)')
              if curr_percent > self.stop_bonding_after_percent:
                  self.dybond_updater.disable() # first stop the updater
                  self.percent_check_callback.disable()
@@ -201,15 +202,17 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
                  if self.use_dybond_plugin is True:
                     self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
-                    self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
-                                       B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
-                                       rcut=1.0,alpha=self.sec_bond_weight, callback_at_percent=1.0,
+                    self.dybond_updater.set_params(bond_type='A-B',A='A',
+                                                   A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
+                                                   B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,
+                                                   Ea=self.activation_energy,
+                                                   rcut=self.bond_radius,alpha=self.sec_bond_weight,
+                                                   callback_at_percent=self.stop_bonding_after_percent,
                                                    callback=self.print_curing_and_stop_updater)
-                    if self.stop_bonding_after_percent is not None:
-                        self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent"], period = 1e4)
-                        self.percent_check_callback = hoomd.analyze.callback(callback=self.percent_check,
-                                                                                   period=1e4)
-
+                    #if self.stop_bonding_after_percent is not None:
+                    #    self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent(A-B)"], period = 1e4)
+                    #    self.percent_check_callback = hoomd.analyze.callback(callback=self.percent_check,
+                    #                                                               period=1e4)
                     if self.stop_bonding_after is not None:
                         self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
                                                                                    period=self.stop_bonding_after)
