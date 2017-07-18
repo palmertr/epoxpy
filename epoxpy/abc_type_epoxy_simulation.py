@@ -154,6 +154,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
              self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
+    def print_curing_and_stop_updater(self, bond_percent):
+        print('Cure percent is ',bond_percent)
+        #self.dybond_updater.disable()
+
     def stop_dybond_updater(self, timestep):
              if self.stop_dybond_updater_callback is not None:
                  self.dybond_updater.disable() # first stop the updater
@@ -199,7 +203,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                     self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
                     self.dybond_updater.set_params(bond_type='A-B',A='A',A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
-                                       rcut=1.0,alpha=self.sec_bond_weight)
+                                       rcut=1.0,alpha=self.sec_bond_weight, callback_at_percent=1.0,
+                                                   callback=self.print_curing_and_stop_updater)
                     if self.stop_bonding_after_percent is not None:
                         self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent"], period = 1e4)
                         self.percent_check_callback = hoomd.analyze.callback(callback=self.percent_check,
@@ -234,7 +239,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
         possible_bonds = self.total_possible_bonds()
         bond_percent = (n_bonds / possible_bonds) * 100.
-        print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
+        #print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
         return bond_percent
 
     '''deprecated: Used with freud and legacy bonding
