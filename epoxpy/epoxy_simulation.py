@@ -160,7 +160,7 @@ class EpoxySimulation(Simulation):
         quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy", 
                     "temperature", "pressure", "bond_harmonic_energy"]
         if self.dybond_updater is not None:
-            quantities.append("bond_percent")
+            quantities.append("bond_percent(A-B)")
             #quantities.append("avg_num_failed_bonds")
             #quantities.append("avg_num_neighbors")
 

@@ -162,7 +162,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              else:
                  hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
     def percent_check(self, timestep):
-             curr_percent = self.percent_check_logger.query('bond_percent')
+             curr_percent = self.percent_check_logger.query('bond_percent(A-B)')
              if curr_percent > self.stop_bonding_after_percent:
                  self.dybond_updater.disable() # first stop the updater
                  self.percent_check_callback.disable()
@@ -202,7 +202,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                                        B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,Ea=self.activation_energy,
                                        rcut=self.bond_radius,alpha=self.sec_bond_weight)
                     if self.stop_bonding_after_percent is not None:
-                        self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent"], period = 1e4)
+                        self.percent_check_logger = hoomd.analyze.log(filename=None, quantities=["bond_percent(A-B)"], period = 1e4)
                         self.percent_check_callback = hoomd.analyze.callback(callback=self.percent_check,
                                                                                    period=1e4)
                     if self.stop_bonding_after is not None:
