@@ -104,7 +104,7 @@ def run_simulation(state_point, Force=False):
         run_epoxy_sim(job=job, **job.statepoint())
 
 
-long_simulation = True
+long_simulation = False
 
 if long_simulation:
     time_scale = 10000
@@ -119,8 +119,8 @@ else:
     mixing_time = 100
     n_mul = 20.0
     curing_log_period = 1
-    log_write_period = 1
-    data_write_period = 1
+    log_write_period = 1e3
+    data_write_period = 1e4
     stop_bonding_after = None # timesteps after start of curing
 
 kTs = [0.5]
@@ -155,7 +155,7 @@ for kT in kTs:
           'sec_bond_weight': 1.0,
           'profile_run':True,
           'nl_tuning':False,
-          'stop_bonding_after_percent': None} # Percent to stop bonding
+          'stop_bonding_after_percent':5.0 } # Percent to stop bonding
     job = init_job(sp)
     jobs.append(job)
 
