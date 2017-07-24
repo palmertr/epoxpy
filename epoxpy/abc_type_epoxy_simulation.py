@@ -37,13 +37,14 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
           bond     : boolean value denoting whether to run the bonding routine for A's and B's
           bond_period: time interval between calls to the bonding routine
        """
-    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
+    def __init__(self, sim_name, mix_time, cool_after_mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
                  bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, 
                  stop_after_percent=100.0, percent_bonds_per_step=0.0025, **kwargs):
-        EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof,
+        EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, cool_after_mix_time=cool_after_mix_time,
+                                 mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
                                  activation_energy=activation_energy, sec_bond_weight=sec_bond_weight,
@@ -170,55 +171,57 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
 
     def setup_md_run(self):
-             self.group_a = hoomd.group.type(name='a-particles', type='A')
-             self.group_b = hoomd.group.type(name='b-particles', type='B')
-             self.group_c = hoomd.group.type(name='c-particles', type='C')
-             self.msd_groups = [self.group_a, self.group_b, self.group_c]
+        self.group_a = hoomd.group.type(name='a-particles', type='A')
+        self.group_b = hoomd.group.type(name='b-particles', type='B')
+        self.group_c = hoomd.group.type(name='c-particles', type='C')
+        self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
-             self.nl = md.nlist.cell()
-             profile = self.temp_prof.get_profile()
-             print('temperature profile {}'.format(profile.points))
-             self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=profile, seed=0)
-             self.dpd.set_params(kT=profile)
-             self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
+        self.nl = md.nlist.cell()
+        profile = self.temp_prof.get_profile()
+        print('temperature profile {}'.format(profile.points))
+        self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=profile, seed=123456)
+        self.dpd.set_params(kT=profile)
+        self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
 
-             self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
 
-             self.harmonic = md.bond.harmonic()
-             self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-             self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+        self.harmonic = md.bond.harmonic()
+        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
-             if self.bond is True:
-                 self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
-                 if self.use_dybond_plugin is True:
-                    self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
-                    self.dybond_updater.set_params(bond_type='A-B',A='A',
-                                                   A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
-                                                   B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,
-                                                   Ea=self.activation_energy,
-                                                   rcut=self.bond_radius,alpha=self.sec_bond_weight,
-                                                   percent_bonds_per_step=self.percent_bonds_per_step,
-                                                   stop_after_percent=self.stop_after_percent,
-                                                   callback=self.print_curing_and_stop_updater)
-                    if self.stop_bonding_after is not None:
-                        self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
-                                                                                   period=self.stop_bonding_after)
-                 else:
-                    if self.legacy_bonding is True:
-                        self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
-                                                     activation_energy=self.activation_energy,
-                                                 sec_bond_weight=self.sec_bond_weight)
-                    else:
-                        self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
-                                                    activation_energy=self.activation_energy,
-                                                sec_bond_weight=self.sec_bond_weight)
-                    self.bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
+        if self.bond is True:
+            if self.use_dybond_plugin is True:
+                self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
+                self.dybond_updater.set_params(bond_type='A-B',A='A',
+                                               A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
+                                               B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,
+                                               Ea=self.activation_energy,
+                                               rcut=self.bond_radius,alpha=self.sec_bond_weight,
+                                               percent_bonds_per_step=self.percent_bonds_per_step,
+                                               stop_after_percent=self.stop_after_percent,
+                                               callback=self.print_curing_and_stop_updater)
+                self.dybond_updater.disable()# will be enabled after cool down run
 
-             
+                if self.stop_bonding_after is not None:
+                    self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,
+                                                                           period=self.stop_bonding_after)
+            else:
+                self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"],
+                                                        period=self.bond_period)
+                if self.legacy_bonding is True:
+                    self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
+                                                 activation_energy=self.activation_energy,
+                                             sec_bond_weight=self.sec_bond_weight)
+                else:
+                    self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
+                                                activation_energy=self.activation_energy,
+                                            sec_bond_weight=self.sec_bond_weight)
+                self.bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)
+
     def total_possible_bonds(self):
         if self.num_b * FreudBonding.MAX_B_BONDS > self.num_a * FreudBonding.MAX_A_BONDS:
            possible_bonds = (self.num_a * FreudBonding.MAX_A_BONDS)

@@ -46,12 +46,13 @@ class EpoxySimulation(Simulation):
     __metaclass__ = ABCMeta
     engine_name = 'HOOMD'
 
-    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
+    def __init__(self, sim_name, mix_time, cool_after_mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
                  bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1,
                  sec_bond_weight=500.0, stop_bonding_after=None):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
+        self.cool_after_mix_time = cool_after_mix_time
         self.output_dir = output_dir  # os.path.join(output_dir,sim_name)
         self.bond = bond
         self.bond_period = bond_period
@@ -187,6 +188,8 @@ class EpoxySimulation(Simulation):
     def run_md(self):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())
+        hoomd.run(self.cool_after_mix_time)
+        self.dybond_updater.enable()
         hoomd.run(self.md_time)
         if self.profile_run:
             hoomd.run(int(self.md_time*0.1),profile=True)# run 10% of the simulation time to calculate performance

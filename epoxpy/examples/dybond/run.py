@@ -38,7 +38,8 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     in_path = os.path.join(job.workspace(), 'script_bckp.py')
     # shutil.copy(__file__, in_path)
 
-    myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt, temp_prof=temp_prof, bond=bond,
+    myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time,
+                                           cool_after_mix_time=mix_time*1.5,mix_kt=mix_kt, temp_prof=temp_prof, bond=bond,
                                            n_mul=n_mul, shrink=shrink, legacy_bonding=legacy_bonding,
                                            ext_init_struct_path=ext_init_struct_path,
                                            exclude_mixing_in_output=exclude_mixing_in_output, log_curing=log_curing,
