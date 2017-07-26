@@ -33,13 +33,13 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
     temp_temperature_profile.set_raw(temp_prof)
     temp_prof = temp_temperature_profile
     print('tempearture profile:{}'.format(temp_prof))
-    #fig = temp_prof.get_figure()
-    #fig.savefig(fig_path)
+    fig = temp_prof.get_figure()
+    fig.savefig(fig_path)
     in_path = os.path.join(job.workspace(), 'script_bckp.py')
     # shutil.copy(__file__, in_path)
 
     myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time,
-                                           cool_after_mix_time=mix_time*1.5,mix_kt=mix_kt, temp_prof=temp_prof, bond=bond,
+                                           mix_kt=mix_kt, temp_prof=temp_prof, bond=bond,
                                            n_mul=n_mul, shrink=shrink, legacy_bonding=legacy_bonding,
                                            ext_init_struct_path=ext_init_struct_path,
                                            exclude_mixing_in_output=exclude_mixing_in_output, log_curing=log_curing,
@@ -118,9 +118,9 @@ if long_simulation:
 else:
     time_scale = 300
     mixing_time = 100
-    n_mul = 20.0
+    n_mul = 2.0
     curing_log_period = 1
-    log_write_period = 1e3
+    log_write_period = 1e0
     data_write_period = 1e4
     stop_bonding_after = None # timesteps after start of curing
 
@@ -129,7 +129,7 @@ mixing_temperature = 20.0
 jobs = []
 
 for kT in kTs:
-    flat_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=mixing_temperature,
+    flat_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature=kT,
                                                             initial_time=mixing_time)
     flat_temp_profile.add_state_point(1 * time_scale, kT)
     flat_temp_profile.add_state_point(499 * time_scale, kT)

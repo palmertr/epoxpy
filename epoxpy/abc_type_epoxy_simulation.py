@@ -37,13 +37,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
           bond     : boolean value denoting whether to run the bonding routine for A's and B's
           bond_period: time interval between calls to the bonding routine
        """
-    def __init__(self, sim_name, mix_time, cool_after_mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
+    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
                  bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=1.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, 
                  stop_after_percent=100.0, percent_bonds_per_step=0.0025, **kwargs):
-        EpoxySimulation.__init__(self, sim_name, mix_time=mix_time, cool_after_mix_time=cool_after_mix_time,
+        EpoxySimulation.__init__(self, sim_name, mix_time=mix_time,
                                  mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
@@ -204,7 +204,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                                                percent_bonds_per_step=self.percent_bonds_per_step,
                                                stop_after_percent=self.stop_after_percent,
                                                callback=self.print_curing_and_stop_updater)
-                self.dybond_updater.disable()# will be enabled after cool down run
 
                 if self.stop_bonding_after is not None:
                     self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,

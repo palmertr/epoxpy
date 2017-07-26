@@ -5,7 +5,8 @@ from hoomd import md
 from hoomd import deprecated
 from hoomd import dump
 from abc import ABCMeta, abstractmethod
-import random
+import numpy.random as rd
+import numpy as np
 import os, errno
 
 
@@ -46,13 +47,12 @@ class EpoxySimulation(Simulation):
     __metaclass__ = ABCMeta
     engine_name = 'HOOMD'
 
-    def __init__(self, sim_name, mix_time, cool_after_mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
+    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
                  bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1,
                  sec_bond_weight=500.0, stop_bonding_after=None):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
-        self.cool_after_mix_time = cool_after_mix_time
         self.output_dir = output_dir  # os.path.join(output_dir,sim_name)
         self.bond = bond
         self.bond_period = bond_period
@@ -185,11 +185,36 @@ class EpoxySimulation(Simulation):
         elif self.mixed_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
 
+    @staticmethod
+    def init_velocity(n, temp):
+        v = rd.random((n, 3))
+        v -= 0.5
+        meanv = np.mean(v, 0)
+        meanv2 = np.mean(v ** 2, 0)
+        # fs = np.sqrt(3.*temp/meanv2)
+        fs = np.sqrt(temp / meanv2)
+        # print('scaling factor:{}'.format(fs))
+        # print('v0:{}'.format(v))
+        v = (v - meanv)  # shifts the average velocity of the simulation to 0
+        v *= fs  # scaling velocity to match the desired temperature
+        return v
+
+    def initialize_snapshot_temperature(self, snapshot, temp):
+        v = self.init_velocity(snapshot.particles.N, temp)
+        snapshot.particles.velocity[:] = v[:]
+        return snapshot
+
+    def set_initial_particle_velocities(self, kT):
+        snapshot = self.system.take_snapshot()
+        snapshot = self.initialize_snapshot_temperature(snapshot, kT)
+        self.system.restore_snapshot(snapshot)
+        print('Reset the system temperature to {} kT after mixing'.format(kT))
+
     def run_md(self):
         md.integrate.mode_standard(dt=self.dt)
         md.integrate.nve(group=hoomd.group.all())
-        hoomd.run(self.cool_after_mix_time)
-        self.dybond_updater.enable()
+        first_target_temperature = self.temp_prof.temperature_profile[0][1]
+        self.set_initial_particle_velocities(first_target_temperature)
         hoomd.run(self.md_time)
         if self.profile_run:
             hoomd.run(int(self.md_time*0.1),profile=True)# run 10% of the simulation time to calculate performance
