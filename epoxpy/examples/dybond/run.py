@@ -27,7 +27,10 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                   use_dybond_plugin,
                   profile_run,
                   nl_tuning,
-                  stop_bonding_after_percent):
+                  stop_bonding_after_percent,
+                  percent_bonds_per_step,
+                  AA_interaction,
+                  AC_interaction):
     fig_path = os.path.join(job.workspace(), 'temperature_profile.png')
     temp_temperature_profile = tpb.LinearTemperatureProfileBuilder(0)
     temp_temperature_profile.set_raw(temp_prof)
@@ -52,7 +55,10 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            use_dybond_plugin=use_dybond_plugin,
                                            profile_run=profile_run,
                                            nl_tuning=nl_tuning,
-                                           stop_bonding_after_percent=stop_bonding_after_percent)
+                                           stop_after_percent=stop_bonding_after_percent,
+                                           percent_bonds_per_step=percent_bonds_per_step,
+                                           AA_interaction=AA_interaction,
+                                           AC_interaction=AC_interaction)
 
     mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
     mySingleJobForEpoxy.execute()
@@ -116,15 +122,15 @@ if long_simulation:
     data_write_period = 1e5
     stop_bonding_after = None # timesteps after start of curing
 else:
-    time_scale = 300
+    time_scale = 100
     mixing_time = 100
-    n_mul = 2.0
-    curing_log_period = 1
-    log_write_period = 1e0
+    n_mul = 10.0
+    curing_log_period = 1e4
+    log_write_period = 1e4
     data_write_period = 1e4
     stop_bonding_after = None # timesteps after start of curing
 
-kTs = [0.5]
+kTs = [1.0]
 mixing_temperature = 20.0
 jobs = []
 
@@ -151,12 +157,15 @@ for kT in kTs:
           'dcd_write': data_write_period,
           'bond_period': 1e1,
           'dt': 1e-2,
-          'density': 1.0,
-          'activation_energy': 1.0,
+          'density': 3.0,
+          'activation_energy': 2.0,
           'sec_bond_weight': 1.0,
           'profile_run':True,
           'nl_tuning':False,
-          'stop_bonding_after_percent':5.0 } # Percent to stop bonding
+          'stop_bonding_after_percent':85.0,
+          'percent_bonds_per_step':0.025,
+          'AA_interaction':25.0,
+          'AC_interaction':40.0} # Percent to stop bonding
     job = init_job(sp)
     jobs.append(job)
 
