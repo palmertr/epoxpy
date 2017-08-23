@@ -39,9 +39,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
        """
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, num_a=10, num_b=20,
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
-                 bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=1.0,
+                 bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=3.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
-                 AA_interaction=1.0, AC_interaction=10.0, stop_bonding_after=None, 
+                 AA_interaction=25.0, AB_interaction=35.0, AC_interaction=35.0, BC_interaction=35.0, 
+                 gamma=4.5, stop_bonding_after=None, 
                  stop_after_percent=100.0, percent_bonds_per_step=0.0025, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time,
                                  mix_kt=mix_kt, temp_prof=temp_prof,
@@ -59,7 +60,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_b = None
         self.group_c = None
         self.AA_interaction = AA_interaction
+        self.AB_interaction = AB_interaction
         self.AC_interaction = AC_interaction
+        self.BC_interaction = BC_interaction
+        self.gamma = gamma
         self.stop_after_percent = stop_after_percent
         self.bond_radius = bond_radius
         self.percent_bonds_per_step = percent_bonds_per_step
@@ -145,14 +149,14 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
              self.nl = md.nlist.cell()
-             self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=self.mix_kT, seed=0)
-             self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
+             self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=self.mix_kT, seed=123456)
+             self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=self.gamma)
+             self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=self.gamma)
+             self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=self.gamma)
 
-             self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
-             self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
+             self.dpd.pair_coeff.set('A', 'B', A=self.AB_interaction, gamma=self.gamma)
+             self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
+             self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
 
              self.harmonic = md.bond.harmonic()
              self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
@@ -181,13 +185,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         print('temperature profile {}'.format(profile.points))
         self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=profile, seed=123456)
         self.dpd.set_params(kT=profile)
-        self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=1.0)
-        self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=self.gamma)
+        self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=self.gamma)
+        self.dpd.pair_coeff.set('C', 'C', A=self.AA_interaction, gamma=self.gamma)
 
-        self.dpd.pair_coeff.set('A', 'B', A=self.AC_interaction, gamma=1.0)
-        self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=1.0)
-        self.dpd.pair_coeff.set('B', 'C', A=self.AC_interaction, gamma=1.0)
+        self.dpd.pair_coeff.set('A', 'B', A=self.AB_interaction, gamma=self.gamma)
+        self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
+        self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
 
         self.harmonic = md.bond.harmonic()
         self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
