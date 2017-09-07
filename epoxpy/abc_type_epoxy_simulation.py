@@ -158,9 +158,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
              self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
 
-             self.harmonic = md.bond.harmonic()
-             self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-             self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+             if self.num_b > 0 and self.num_c10 > 0:
+                 self.harmonic = md.bond.harmonic()
+                 self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+                 self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
     def print_curing_and_stop_updater(self, bond_percent):
         print("HIT OUR TARGET: {}".format(self.stop_after_percent))
@@ -193,9 +194,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
 
-        self.harmonic = md.bond.harmonic()
-        self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-        self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+        if self.num_b > 0 and self.num_c10 > 0:
+            self.harmonic = md.bond.harmonic()
+            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
+            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
 
         if self.bond is True:
             if self.use_dybond_plugin is True:
