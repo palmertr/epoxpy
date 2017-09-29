@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from hoomd import variant
 import matplotlib
-matplotlib.use('webagg')
+matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 
 

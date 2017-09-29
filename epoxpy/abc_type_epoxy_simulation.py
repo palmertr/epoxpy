@@ -43,16 +43,18 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  activation_energy=1.0, sec_bond_weight=5.0,
                  AA_interaction=25.0, AB_interaction=35.0, AC_interaction=35.0, BC_interaction=35.0, 
                  gamma=4.5, stop_bonding_after=None, 
-                 stop_after_percent=100.0, percent_bonds_per_step=0.0025, **kwargs):
+                 stop_after_percent=100.0, percent_bonds_per_step=0.0025,
+                 AB_bond_const=100, CC_bond_const=100,
+                 AB_bond_dist=1, CC_bond_dist=1, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time,
                                  mix_kt=mix_kt, temp_prof=temp_prof,
                                  log_write=log_write, dcd_write=dcd_write, output_dir=output_dir, bond=bond,
                                  bond_period=bond_period, box=box, dt=dt, density=density,
                                  activation_energy=activation_energy, sec_bond_weight=sec_bond_weight,
                                  stop_bonding_after=stop_bonding_after)
-        self.num_a = num_a * n_mul
-        self.num_b = num_b * n_mul
-        self.num_c10 = num_c10 * n_mul
+        self.num_a = int(num_a * n_mul)
+        self.num_b = int(num_b * n_mul)
+        self.num_c10 = int(num_c10 * n_mul)
         self.n_mul = n_mul
         self.dpd = None
         self.harmonic = None
@@ -63,6 +65,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.AB_interaction = AB_interaction
         self.AC_interaction = AC_interaction
         self.BC_interaction = BC_interaction
+        self.AB_bond_const=AB_bond_const
+        self.CC_bond_const=CC_bond_const
+        self.AB_bond_dist=AB_bond_dist
+        self.CC_bond_dist=CC_bond_dist
         self.gamma = gamma
         self.stop_after_percent = stop_after_percent
         self.bond_radius = bond_radius
@@ -157,11 +163,12 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
              self.dpd.pair_coeff.set('A', 'B', A=self.AB_interaction, gamma=self.gamma)
              self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
              self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
-
+             
              if self.num_b > 0 and self.num_c10 > 0:
                  self.harmonic = md.bond.harmonic()
-                 self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-                 self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+                 self.harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+                 self.harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
+             self.nl.reset_exclusions(exclusions = []);
 
     def print_curing_and_stop_updater(self, bond_percent):
         print("HIT OUR TARGET: {}".format(self.stop_after_percent))
@@ -196,8 +203,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
         if self.num_b > 0 and self.num_c10 > 0:
             self.harmonic = md.bond.harmonic()
-            self.harmonic.bond_coeff.set('C-C', k=100.0, r0=1.0)
-            self.harmonic.bond_coeff.set('A-B', k=100.0, r0=1.0)
+            self.harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            self.harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
+            print('C-C bond constant:',self.CC_bond_const,'C-C bond dist:',self.CC_bond_dist)
+        self.nl.reset_exclusions(exclusions = []);
 
         if self.bond is True:
             if self.use_dybond_plugin is True:
