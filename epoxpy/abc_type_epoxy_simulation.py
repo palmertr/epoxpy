@@ -8,7 +8,7 @@ from hoomd import deprecated
 import mbuild as mb
 import os
 import numpy as np
-import init as my_init
+import epoxpy.init as my_init
 from collections import Counter
 
 
@@ -42,8 +42,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
                  num_c10=2, n_mul=1.0, output_dir=os.getcwd(), bond=False,
                  bond_period=1e1, bond_radius=1.0, box=[3, 3, 3], dt=1e-2, density=3.0,
                  activation_energy=1.0, sec_bond_weight=5.0,
-                 AA_interaction=25.0, AB_interaction=35.0, AC_interaction=35.0, BC_interaction=35.0, 
-                 gamma=4.5, stop_bonding_after=None, 
+                 AA_interaction=25.0, AB_interaction=35.0, AC_interaction=35.0, BC_interaction=35.0,
+                 gamma=4.5, stop_bonding_after=None,
                  stop_after_percent=100.0, percent_bonds_per_step=0.0025, **kwargs):
         EpoxySimulation.__init__(self, sim_name, mix_time=mix_time,
                                  mix_kt=mix_kt, temp_prof=temp_prof,
@@ -73,22 +73,19 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def set_initial_structure(self, old_init=False): # TODO this needs to be set in the base class or something
-        if old_init == True:
+    def set_initial_structure(self): # TODO this needs to be set in the base class or something
+        desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
+        desired_box_dim = (desired_box_volume ** (1./3.))
+        self.box = [desired_box_dim, desired_box_dim, desired_box_dim]
+        if self.old_init == True:
             print("\n\n ===USING OLD INIT=== \n\n")
-            A = my_init.Bead(btype="A", mass = A.mass)
-            B = my_init.Bead(btype="B", mass = B.mass)
-            C = my_init.PolyBead(btype="C", mass = 1.0, N = 10) # Hardcode C10, with mon-mass 1.0
-            snap = my_init.init_system({A : int(self.num_a), B : int(self.num_b), C : int(self.num_c10)}, self.density)
-            hoomd.deprecated.dump.xml(group=group.all(), filename="oldinit.hoomdxml", all=True)
-            hoomd.dump.gsd(group=hoomd.group.all(), filename="oldinit.gsd", overwrite=True, period=None)
-            self.system.restore_snapshot(snap)
-
+            As = my_init.Bead(btype="A", mass=A.mass)
+            Bs = my_init.Bead(btype="B", mass=B.mass)
+            C10s = my_init.PolyBead(btype="C", mass = 1.0, N = 10) # Hardcode C10, with mon-mass 1.0
+            snap = my_init.init_system({As : int(self.num_a), Bs :int(self.num_b), C10s : int(self.num_c10)}, self.density)
+            self.system = hoomd.init.read_snapshot(snap)
         else:
             if self.shrink is True:
-                desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
-                desired_box_dim = (desired_box_volume ** (1./3.))
-                self.box = [desired_box_dim, desired_box_dim, desired_box_dim]
                 print('Packing {} A particles ..'.format(self.num_a))
                 mix_box = mb.packing.fill_box(A(), self.num_a, box=self.box)
                 mix_box = mb.packing.solvate(mix_box, B(), self.num_b, box=self.box)
@@ -125,16 +122,16 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             snapshot.bonds.types = ['C-C', 'A-B']
             self.system.restore_snapshot(snapshot)
 
-            if self.shrink is True:
-                hoomd.update.box_resize(period=1, L=desired_box_dim)
-                hoomd.run(self.shrink_time)
-                snapshot = self.system.take_snapshot()
-                print('Initial box dimension: {}'.format(snapshot.box))
+        if self.shrink is True:
+            hoomd.update.box_resize(period=1, L=desired_box_dim)
+            hoomd.run(self.shrink_time)
+            snapshot = self.system.take_snapshot()
+            print('Initial box dimension: {}'.format(snapshot.box))
 
-            if self.init_file_name.endswith('.hoomdxml'):
-                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-            elif self.init_file_name.endswith('.gsd'):
-                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+        if self.init_file_name.endswith('.hoomdxml'):
+            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+        elif self.init_file_name.endswith('.gsd'):
+            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
     def initialize_system_from_file(self, file_path, use_time_step_from_file=True):
         if use_time_step_from_file:
