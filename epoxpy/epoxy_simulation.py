@@ -85,6 +85,7 @@ class EpoxySimulation(Simulation):
         self.profile_run = False
         self.legacy_bonding = False
         self.use_dybond_plugin = True
+        self.old_init = False
         self.exclude_mixing_in_output = False # PLEASE NOTE THAT THE TRAJECTORY CHANGES WHEN THIS IS CHANGED!!
         self.resume_file_name = os.path.join(self.output_dir, 'final.hoomdxml')
         self.init_file_name = os.path.join(self.output_dir, 'initial.hoomdxml')
@@ -158,7 +159,7 @@ class EpoxySimulation(Simulation):
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'start.hoomdxml'), all=True)
-        quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy", 
+        quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy",
                     "temperature", "pressure", "bond_harmonic_energy"]
         if self.dybond_updater is not None:
             quantities.append("bond_percent(A-B)")
