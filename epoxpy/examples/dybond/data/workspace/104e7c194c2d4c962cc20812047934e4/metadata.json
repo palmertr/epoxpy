@@ -1,0 +1,159 @@
+{
+  "context": {
+    "cputime": 5.278486,
+    "gpu": "",
+    "hostname": "sub-mcompton.boisestate.edu",
+    "job_id": "",
+    "job_name": "",
+    "mode": "cpu",
+    "num_ranks": 1,
+    "username": "stephenthomas",
+    "wallclocktime": 5.216762065887451
+  },
+  "hoomd": {
+    "compiler_version": "clang 9.0.0",
+    "cuda_version": [
+      0,
+      0
+    ],
+    "hoomd_compile_flags": "SINGLE SSE SSE2 SSE3 SSE4_1 ",
+    "hoomd_git_refspec": "refs/heads/dynamic_bonding",
+    "hoomd_git_sha1": "9bac56894eac72abf883cd13d31566aa82282e4f",
+    "hoomd_version": [
+      2,
+      1,
+      7
+    ]
+  },
+  "hoomd.data.system_data": {
+    "angles": {
+      "N": 0,
+      "types": []
+    },
+    "bonds": {
+      "N": 180,
+      "types": [
+        "C-C",
+        "A-B"
+      ]
+    },
+    "box": {
+      "Lx": 5.503211975097656,
+      "Ly": 5.503211975097656,
+      "Lz": 5.503211975097656,
+      "V": 166.66665649414062,
+      "d": 3,
+      "xy": 0.0,
+      "xz": 0.0,
+      "yz": 0.0
+    },
+    "constraints": {
+      "N": 0
+    },
+    "dihedrals": {
+      "N": 0,
+      "types": []
+    },
+    "impropers": {
+      "N": 0,
+      "types": []
+    },
+    "number_density": 3.00000018310548,
+    "pairs": {
+      "N": 0,
+      "types": []
+    },
+    "particles": {
+      "N": 500,
+      "types": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "timestep": 101
+  },
+  "hoomd.dybond_plugin.update.dybond": [
+    {
+      "enabled": true
+    }
+  ],
+  "hoomd.md.bond.harmonic": [
+    {
+      "bond_coeff": {
+        "A-B": {
+          "k": 100,
+          "r0": 1
+        },
+        "C-C": {
+          "k": 100,
+          "r0": 1
+        }
+      },
+      "enabled": true,
+      "log": true
+    }
+  ],
+  "hoomd.md.pair.dpd": [
+    {
+      "enabled": true,
+      "log": true,
+      "pair_coeff": [
+        {
+          "A": 40.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "A",
+          "typej": "C"
+        },
+        {
+          "A": 25.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "C",
+          "typej": "C"
+        },
+        {
+          "A": 35.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "A",
+          "typej": "B"
+        },
+        {
+          "A": 25.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "B",
+          "typej": "B"
+        },
+        {
+          "A": 25.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "A",
+          "typej": "A"
+        },
+        {
+          "A": 35.0,
+          "gamma": 4.5,
+          "r_cut": 1.0,
+          "r_on": 1.0,
+          "typei": "B",
+          "typej": "C"
+        }
+      ]
+    }
+  ],
+  "hoomd.update.sort": [
+    {
+      "enabled": true
+    }
+  ],
+  "timestamp": "2017-10-09 16:22:48"
+}

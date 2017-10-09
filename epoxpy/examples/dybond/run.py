@@ -1,13 +1,10 @@
 import epoxpy.abc_type_epoxy_simulation as es
-import epoxpy.job as jb
 import epoxpy.temperature_profile_builder as tpb
 import os
 import numpy as np
 import shutil
 import matplotlib
 import signac
-matplotlib.use('webagg')
-import matplotlib.pyplot as plt
 
 
 def get_status(job):
@@ -60,26 +57,9 @@ def run_epoxy_sim(sim_name, mix_time, mix_kt, temp_prof, bond, n_mul, shrink, le
                                            AA_interaction=AA_interaction,
                                            AC_interaction=AC_interaction)
 
-    mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
-    mySingleJobForEpoxy.execute()
+    myEpoxySim.execute()
 
     job.document['bond_percent'] = myEpoxySim.get_curing_percentage()
-    log_path = os.path.join(job.workspace(), 'curing.log')
-    np.savetxt(log_path, myEpoxySim.curing_log)
-    bond_rank_log_path = os.path.join(job.workspace(), 'bond_rank.log')
-    #print(myEpoxySim.bond_rank_log)
-    np.savetxt(bond_rank_log_path,myEpoxySim.bond_rank_log)
-    curing_log = list(zip(*myEpoxySim.curing_log))
-    if len(curing_log) > 0:
-        #fig = plt.figure()
-        plt.xlabel('Time steps')
-        plt.ylabel('Cure percent')
-        plt.margins(x=0.1, y=0.1)
-        plt.plot(curing_log[0], curing_log[1])
-        plt.plot(curing_log[0], curing_log[1], 'or')
-        fig_path = os.path.join(job.workspace(), 'curing_curve.png')
-        #fig.savefig(fig_path)
-
 
 def init_job(state_point):
     project = signac.init_project('ABCTypeEpoxy', 'data/')

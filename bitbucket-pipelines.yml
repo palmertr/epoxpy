@@ -12,6 +12,10 @@ pipelines:
           script:
             - echo "This script runs only on commit to the master branch."
             - ls
+            - conda env create -f conda_env.yml
+            - source activate epoxy_sim
+            - cd epoxpy
+            - pytest
     freud_integration:
       - step:
           script:

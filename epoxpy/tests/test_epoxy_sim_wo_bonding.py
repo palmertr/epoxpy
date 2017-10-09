@@ -10,7 +10,6 @@ class TestWOBonding(BaseTest):
     @pytest.mark.long
     def test_epoxy_sim_wo_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
-        import epoxpy.job as jb
         import epoxpy.temperature_profile_builder as tpb
         import random
         import os
@@ -19,8 +18,6 @@ class TestWOBonding(BaseTest):
 
         random.seed(1020)
         print('\n# Test: test_epoxy_sim_wo_bonding')
-        expected_gsd_file = os.path.join(datadir, 'wo_bonding.gsd')
-        print('expected gsd file path:{}'.format(expected_gsd_file))
 
         mix_time = 3e4
         mix_kt = 2.0
@@ -34,14 +31,11 @@ class TestWOBonding(BaseTest):
         out_dir = str(tmpdir)
         exclude_mixing_in_output = False
         out_dir = os.path.join(out_dir, sim_name)
-        initial_structure_path = os.path.join(datadir, 'no_shrink_init.hoomdxml')
         myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
-                                               temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=1.0,
-                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False,
-                                               ext_init_struct_path=initial_structure_path)
+                                               temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=2.0,
+                                               exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
 
-        mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
-        mySingleJobForEpoxy.execute()
+        myEpoxySim.execute()
 
         total_time = type_A_md_temp_profile.get_total_sim_time()
         md_time = total_time-mix_time
@@ -53,18 +47,11 @@ class TestWOBonding(BaseTest):
         print('current directory: {}'.format(os.getcwd()))
         print('tmp dir: {}'.format(tmpdir))
         print('datadir: {}'.format(datadir))
-        print('expected gsd path:{}'.format(expected_gsd_file))
 
         current_gsd = tmpdir.join(sim_name, 'data.gsd')
         gsd_path = str(current_gsd)
         f = gsd.fl.GSDFile(gsd_path, 'rb')
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
-        f = gsd.fl.GSDFile(expected_gsd_file, 'rb')
-        t = gsd.hoomd.HOOMDTrajectory(f)
-        expected_snapshot = t[-1]
 
-        assert snapshot.particles.N == expected_snapshot.particles.N
-        expected_pos = expected_snapshot.particles.position
-        current_pos = snapshot.particles.position
-        assert np.allclose(expected_pos, current_pos)
+        assert snapshot.particles.N == 100

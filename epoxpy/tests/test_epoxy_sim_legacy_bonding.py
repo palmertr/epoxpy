@@ -11,7 +11,6 @@ class TestLegacyBonding(BaseTest):
     @pytest.mark.long
     def test_epoxy_sim_legacy_bonding(self, datadir, tmpdir):
         import epoxpy.abc_type_epoxy_simulation as es
-        import epoxpy.job as jb
         import epoxpy.temperature_profile_builder as tpb
         import random
         import os
@@ -19,9 +18,6 @@ class TestLegacyBonding(BaseTest):
         import gsd.hoomd
 
         random.seed(1020)
-
-        expected_gsd_file = os.path.join(datadir, 'data.gsd')
-        print('expected gsd file path:{}'.format(expected_gsd_file))
 
 
         shrink = False
@@ -32,7 +28,7 @@ class TestLegacyBonding(BaseTest):
         mix_kt = 2.0
         time_scale = 100
         cure_kt = 2.0
-        nmul = 1.0
+        nmul = 2.0
         log_period = 1e5
         dump_period = 1e2
         curing_log_period = 1e1
@@ -42,21 +38,17 @@ class TestLegacyBonding(BaseTest):
 
         sim_name = 'legacy_bonding'
         out_dir = str(tmpdir)
-        initial_structure_path = os.path.join(datadir, 'initial.hoomdxml')
         out_dir = os.path.join(out_dir, sim_name)
         myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=nmul,
                                                shrink=shrink, legacy_bonding=legacy_bonding,
-                                               ext_init_struct_path=initial_structure_path,
                                                exclude_mixing_in_output=exclude_mixing_in_output, log_curing=False,
                                                curing_log_period=curing_log_period,
                                                log_write=log_period,
                                                dcd_write=dump_period,
-                                               output_dir=out_dir,
-                                               reset_random_after_initialize=True)
+                                               output_dir=out_dir)
 
-        mySingleJobForEpoxy = jb.SingleJob(myEpoxySim)
-        mySingleJobForEpoxy.execute()
+        myEpoxySim.execute()
 
         current_gsd = tmpdir.join(sim_name, 'data.gsd')
         gsd_path = str(current_gsd)
@@ -64,15 +56,7 @@ class TestLegacyBonding(BaseTest):
         f = gsd.fl.GSDFile(gsd_path, 'rb')
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
-        f = gsd.fl.GSDFile(expected_gsd_file, 'rb')
-        t = gsd.hoomd.HOOMDTrajectory(f)
-        expected_snapshot = t[-1]
-        assert snapshot.particles.N == expected_snapshot.particles.N
-        expected_pos = expected_snapshot.particles.position
-        current_pos = snapshot.particles.position
-        assert np.allclose(expected_pos, current_pos)
-        expected_bonds = expected_snapshot.bonds.N
+        assert snapshot.particles.N == 100
         current_bonds = snapshot.bonds.N
-        print('test_epoxy_sim_legacy_bonding_count. legacy bonds:{}, freud bonds:{}'.format(expected_bonds,
-                                                                                            current_bonds))
-        assert current_bonds == expected_bonds
+        print('test_epoxy_sim_legacy_bonding_count. legacy bonds:{}'.format(current_bonds))
+        assert current_bonds > 30#Just checking if some bonds are being made

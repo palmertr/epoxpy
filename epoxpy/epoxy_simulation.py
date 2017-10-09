@@ -291,6 +291,7 @@ class EpoxySimulation(Simulation):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()
         if self.reset_random_after_initialize:
+            import random
             random.seed(12345)
         self.run()
         print("Finished executing {}".format(self.simulation_name))
