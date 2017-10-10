@@ -36,7 +36,8 @@ cd epoxpy
 pytest
 ```
 
-* Running multiple jobs on clusters
+* Running jobs on clusters
+
 It is convenient to use the signac-flow based project called [epoxpy-flow](https://bitbucket.org/cmelab/epoxpy-flow) to run epoxpy jobs. 
 
 ### Who do I talk to? ###
