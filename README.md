@@ -18,7 +18,7 @@ epoxpy is a python package for simulating polymerization in epoxy blends. It use
 
 * Clone the epoxpy repository and navigate into the folder
 ```
-git clone git@bitbucket.org:cmelab/epoxy_sim.git
+git clone git@bitbucket.org:cmelab/epoxpy.git
 cd epoxy_sim
 ```
 
