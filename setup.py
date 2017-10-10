@@ -4,9 +4,9 @@ from __future__ import print_function
 from setuptools import setup, find_packages
 
 setup(name='epoxpy',
-        version='0.1',
+        version='2.0',
         description='Simulation wrappers for epoxy simulations using HOOMD',
-        url='https://bitbucket.org/cmelab/epoxy_sim',
+        url='https://bitbucket.org/cmelab/epoxpy',
         author='cmelab',
         author_email='stephenthomas1@boisestate.edu',
         license='MIT',
