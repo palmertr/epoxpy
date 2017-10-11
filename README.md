@@ -1,7 +1,7 @@
 # About #
 epoxpy is a python package for simulating polymerization in epoxy blends. It uses the [dybond plugin](https://bitbucket.org/cmelab/hoomd_blue) in HOOMD-blue to achieve this.
 
-### Prerequisites ###
+# Dependencies
 * Required
 	* Python >= 2.7
 	* Numpy  >= 1.13.3
@@ -12,7 +12,7 @@ epoxpy is a python package for simulating polymerization in epoxy blends. It use
 	* [signac-flow](https://signac-flow.readthedocs.io/en/latest/)
 	* [freud](http://glotzerlab.engin.umich.edu/freud/)
 	
-### Installation ###
+# Installation
 
 epoxpy can be easily installed through [conda](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements). It is tested for python 3.5.
 
@@ -30,17 +30,17 @@ cd epoxy_sim
 conda env create -f conda_env.yml
 pip install .
 ```
-### Running tests
+# Running tests
 ```
 cd epoxpy
 pytest
 ```
 
-### Running jobs on clusters (or locally)
+# Running jobs on clusters (or locally)
 
 It is convenient to use the signac-flow based project called [epoxpy-flow](https://bitbucket.org/cmelab/epoxpy-flow) to run epoxpy jobs. 
 
-### Maintainers ###
+# Maintainers
 
 * Stephen Thomas (stephenthomas1@boisestate.edu)
 * Mike Henry (mikehenry@boisestate.edu)
