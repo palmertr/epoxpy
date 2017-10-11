@@ -6,7 +6,7 @@ epoxpy is a python package for simulating polymerization in epoxy blends. It use
 	* Python >= 2.7
 	* Numpy  >= 1.13.3
 	* HOOMD-Blue ([dynamic_bonding](https://bitbucket.org/cmelab/hoomd_blue) branch)
-	* [mbuild] == 0.6.1 (http://mosdef-hub.github.io/mbuild/)
+	* [mbuild](http://mosdef-hub.github.io/mbuild/) == 0.6.1 
 * Optional
 	* [signac](http://signac.readthedocs.io/en/latest/)
 	* [signac-flow](https://signac-flow.readthedocs.io/en/latest/)
@@ -30,7 +30,7 @@ cd epoxy_sim
 conda env create -f conda_env.yml
 pip install .
 ```
-* How to run tests
+### Running tests
 ```
 cd epoxpy
 pytest
