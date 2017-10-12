@@ -49,7 +49,7 @@ class EpoxySimulation(Simulation):
 
     def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
                  bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1,
-                 sec_bond_weight=500.0, stop_bonding_after=None):
+                 sec_bond_weight=2.0, stop_bonding_after=None):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
