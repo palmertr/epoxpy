@@ -19,7 +19,9 @@ epoxpy can be easily installed through [conda](https://conda.io/docs/install/qui
 ### Installing using conda
 
 ```
-conda install -c cmelab epoxpy
+conda create --name epoxpy python=3.5
+source activate epoxpy
+conda install -c cmelab -c glotzer -c mosdef -c omnia epoxpy
 ```
 
 ### Installing from source
