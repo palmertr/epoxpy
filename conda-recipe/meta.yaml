@@ -15,20 +15,23 @@ requirements:
     - omnia
     - conda-forge
     - bioconda
+    - cmelab
   build:
     - python
     - pytest
     - matplotlib
     - numpy
     - mbuild 0.6.1
-    - hoomd
+    - hoomd_dybond
+    - freud
   run:
     - python
     - pytest
     - matplotlib
     - numpy
     - mbuild 0.6.1
-    - hoomd
+    - hoomd_dybond
+    - freud
 
 test:
   imports:
