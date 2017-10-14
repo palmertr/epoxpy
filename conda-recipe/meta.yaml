@@ -20,7 +20,7 @@ requirements:
     - python
     - pytest
     - matplotlib
-    - numpy
+    - numpy >=1.13.3
     - mbuild 0.6.1
     - hoomd_dybond
     - freud
@@ -28,7 +28,7 @@ requirements:
     - python
     - pytest
     - matplotlib
-    - numpy
+    - numpy >=1.13.3
     - mbuild 0.6.1
     - hoomd_dybond
     - freud
