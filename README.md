@@ -1,6 +1,6 @@
 [![DOI](https://zenodo.org/badge/106355819.svg)](https://zenodo.org/badge/latestdoi/106355819)
 # About #
-epoxpy is a python package for simulating polymerization in epoxy blends. It uses the [dybond plugin](https://bitbucket.org/cmelab/hoomd_blue) in HOOMD-blue to achieve this.
+epoxpy is a python package for simulating polymerization in epoxy blends. It uses the [dybond plugin](https://bitbucket.org/cmelab/hoomd_blue) in HOOMD-blue to achieve this. We recommend installing using conda.
 
 # Dependencies
 * Required
@@ -25,6 +25,8 @@ source activate epoxpy
 conda install -c cmelab -c glotzer -c mosdef -c omnia epoxpy
 ```
 
+Or,
+
 ### Installing from source
 
 ```
@@ -33,7 +35,9 @@ cd epoxy_sim
 conda env create -f conda_env.yml
 pip install .
 ```
-# Running tests
+
+Before submitting pull requests, be sure to run the tests.
+## Running tests
 ```
 cd epoxpy
 pytest
