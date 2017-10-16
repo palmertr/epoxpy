@@ -16,7 +16,7 @@ epoxpy is a python package for simulating polymerization in epoxy blends. It use
 # Installation
 
 epoxpy can be easily installed through [conda](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements). It is tested for python 3.5.
-
+Conda version 4.3 or greater is supported.
 ### Installing using conda
 
 ```
