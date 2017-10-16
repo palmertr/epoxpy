@@ -40,5 +40,5 @@ test:
 
 about:
   home: https://bitbucket.org/cmelab/epoxpy
-  license: GPL-3.0 
+  license: GPLv3 
   license_file: LICENSE
