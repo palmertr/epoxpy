@@ -24,6 +24,7 @@ requirements:
     - mbuild 0.6.1
     - hoomd_dybond
     - freud
+    - gsd
   run:
     - python {{ python }}
     - pytest
@@ -32,7 +33,7 @@ requirements:
     - mbuild 0.6.1
     - hoomd_dybond
     - freud
-
+    - gsd
 test:
   imports:
     - epoxpy
