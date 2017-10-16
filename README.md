@@ -15,19 +15,20 @@ epoxpy is a python package for simulating polymerization in epoxy blends. It use
 	
 # Installation
 
-epoxpy can be easily installed through [conda](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements). It is tested for python 3.5.
-Conda version 4.3 or greater is supported.
-### Installing using conda
+epoxpy can be easily installed through conda. Follow instructions [here](https://conda.io/docs/install/quick.html#miniconda-quick-install-requirements) to install miniconda.
 
+### Install using conda
+
+Conda version 4.3 or greater is supported.
 ```
 conda create --name epoxpy python=3.5
 source activate epoxpy
 conda install -c cmelab -c glotzer -c mosdef -c omnia epoxpy
 ```
 
-Or,
+### Or,
 
-### Installing from source
+### Install from source
 
 ```
 git clone git@bitbucket.org:cmelab/epoxpy.git
@@ -36,8 +37,9 @@ conda env create -f conda_env.yml
 pip install .
 ```
 
-Before submitting pull requests, be sure to run the tests.
-## Running tests
+To check if the install from source was successful, run the tests. Do this also when you make changes and want to submit a pull request.
+
+### Running tests
 ```
 cd epoxpy
 pytest
