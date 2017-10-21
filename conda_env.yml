@@ -4,6 +4,7 @@ channels:
 - omnia
 - conda-forge
 - glotzer
+- cmelab
 - defaults
 dependencies:
 - python=3.5
@@ -11,6 +12,7 @@ dependencies:
 - mbuild=0.6.1
 - freud
 - matplotlib
+- hoomd_dybond
 - gsd
 - pytest
 - signac
