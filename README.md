@@ -72,6 +72,16 @@ cd epoxpy
 pytest
 ```
 
+#Contributing
+
+To contribute, send a pull request to the "dev" branch as shown below:
+```
+git checkout dev
+git checkout -b new_feature
+# make the code changes and commit new branch
+```
+Now, create a pull request to the "dev" branch. This can be done in the bitbucket website.
+
 # Maintainers
 
 * Stephen Thomas (stephenthomas1@boisestate.edu)
