@@ -9,7 +9,7 @@ class TestWOBonding(BaseTest):
     """
     @pytest.mark.long
     def test_epoxy_sim_wo_bonding(self, datadir, tmpdir):
-        import epoxpy.abc_type_epoxy_simulation as es
+        import epoxpy.abc_type_epoxy_dpd_simulation as es
         import epoxpy.temperature_profile_builder as tpb
         import random
         import os
@@ -31,7 +31,7 @@ class TestWOBonding(BaseTest):
         out_dir = str(tmpdir)
         exclude_mixing_in_output = False
         out_dir = os.path.join(out_dir, sim_name)
-        myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
+        myEpoxySim = es.ABCTypeEpoxyDPDSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, output_dir=out_dir, n_mul=2.0,
                                                exclude_mixing_in_output=exclude_mixing_in_output, shrink=False)
 

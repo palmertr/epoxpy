@@ -47,15 +47,31 @@ class EpoxySimulation(Simulation):
     __metaclass__ = ABCMeta
     engine_name = 'HOOMD'
 
-    def __init__(self, sim_name, mix_time, mix_kt, temp_prof, log_write=100, dcd_write=100, output_dir=os.getcwd(),
-                 bond=False, bond_period=1e1, box=[3, 3, 3], dt=1e-2, density=1.0, activation_energy=0.1,
-                 sec_bond_weight=2.0, stop_bonding_after=None):
+    def __init__(self,
+                 sim_name,
+                 mix_time,
+                 mix_kt,
+                 temp_prof,
+                 log_write=100,
+                 dcd_write=100,
+                 output_dir=os.getcwd(),
+                 bond=True,
+                 bond_period=1e1,
+                 bond_radius=1.0,
+                 box=[3, 3, 3],
+                 dt=1e-2,
+                 density=1.0,
+                 activation_energy=1.0,
+                 sec_bond_weight=5.0,
+                 stop_bonding_after=None,
+                 **kwargs):
         Simulation.__init__(self, self.engine_name)
         self.simulation_name = sim_name
         self.mix_time = mix_time
         self.output_dir = output_dir  # os.path.join(output_dir,sim_name)
         self.bond = bond
         self.bond_period = bond_period
+        self.bond_radius = bond_radius
         self.mix_kT = mix_kt
         final_time = temp_prof.get_total_sim_time()
         md__total_time = final_time - mix_time

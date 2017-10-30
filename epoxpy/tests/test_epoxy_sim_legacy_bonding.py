@@ -10,7 +10,7 @@ class TestLegacyBonding(BaseTest):
     """
     @pytest.mark.long
     def test_epoxy_sim_legacy_bonding(self, datadir, tmpdir):
-        import epoxpy.abc_type_epoxy_simulation as es
+        import epoxpy.abc_type_epoxy_dpd_simulation as es
         import epoxpy.temperature_profile_builder as tpb
         import random
         import os
@@ -39,7 +39,7 @@ class TestLegacyBonding(BaseTest):
         sim_name = 'legacy_bonding'
         out_dir = str(tmpdir)
         out_dir = os.path.join(out_dir, sim_name)
-        myEpoxySim = es.ABCTypeEpoxySimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
+        myEpoxySim = es.ABCTypeEpoxyDPDSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile, bond=bonding, n_mul=nmul,
                                                shrink=shrink, legacy_bonding=legacy_bonding,
                                                exclude_mixing_in_output=exclude_mixing_in_output, log_curing=False,
