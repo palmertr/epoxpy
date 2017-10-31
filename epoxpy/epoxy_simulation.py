@@ -167,6 +167,11 @@ class EpoxySimulation(Simulation):
     def calculate_curing_percentage(self, step):
         pass
 
+    def get_log_quantities(self):
+        log_quantities = ["volume", "momentum", "potential_energy",
+                "kinetic_energy","temperature", "pressure","bond_harmonic_energy"]
+        return log_quantities
+
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
         print('log_write: {} dcd_write: {}'.format(self.log_write, self.dcd_write))
@@ -175,8 +180,7 @@ class EpoxySimulation(Simulation):
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'start.hoomdxml'), all=True)
-        quantities=["pair_dpd_energy", "volume", "momentum", "potential_energy", "kinetic_energy",
-                    "temperature", "pressure", "bond_harmonic_energy"]
+        quantities=self.get_log_quantities()
         if self.dybond_updater is not None:
             quantities.append("bond_percent(A-B)")
             #quantities.append("avg_num_failed_bonds")

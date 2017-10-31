@@ -29,6 +29,10 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.BC_interaction = BC_interaction
         self.dpd = None
 
+    def get_log_quantities(self):
+        log_quantities = super().get_log_quantities()+["pair_dpd_energy"]
+        return log_quantities
+
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         super().setup_mixing_run()

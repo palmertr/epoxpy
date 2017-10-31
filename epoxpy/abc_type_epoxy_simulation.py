@@ -83,6 +83,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def get_log_quantities(self):
+        return super().get_log_quantities()
+
     def set_initial_structure(self): # TODO this needs to be set in the base class or something
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
@@ -167,11 +170,12 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_c = hoomd.group.type(name='c-particles', type='C')
         self.msd_groups = [self.group_a, self.group_b, self.group_c]
 
-        self.nl = md.nlist.cell()
         if self.num_b > 0 and self.num_c10 > 0:
             self.harmonic = md.bond.harmonic()
             self.harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
             self.harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
+
+        self.nl = md.nlist.cell()
         self.nl.reset_exclusions(exclusions = []);
 
     def print_curing_and_stop_updater(self, bond_percent):
