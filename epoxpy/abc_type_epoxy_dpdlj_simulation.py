@@ -46,8 +46,8 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         print('========INITIAIZING FOR LJ==========')
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
-        self.box = [desired_box_dim*10, desired_box_dim*10,
-                    desired_box_dim*10]
+        self.box = [desired_box_dim, desired_box_dim,
+                    desired_box_dim]
         if self.old_init == True:
             print("\n\n ===USING OLD INIT=== \n\n")
             As = my_init.Bead(btype="A", mass=A.mass)
@@ -55,18 +55,18 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
             C10s = my_init.PolyBead(btype="C", mass = 1.0, N = 10) # Hardcode C10, with mon-mass 1.0
             snap = my_init.init_system({As : int(self.num_a), Bs
                                         :int(self.num_b), C10s :
-                                        int(self.num_c10)}, self.density/100)
+                                        int(self.num_c10)}, self.density/10)
             self.system = hoomd.init.read_snapshot(snap)
         else:
             if self.shrink is True:
                 print('Packing {} A particles ..'.format(self.num_a))
                 mix_box = mb.packing.fill_box(A(), self.num_a,
-                                              box=self.box,overlap=0.5)
+                                              box=self.box)#,overlap=0.5)
                 mix_box = mb.packing.solvate(mix_box, B(), self.num_b,
-                                             box=self.box,overlap=0.5)
+                                             box=self.box)#,overlap=0.5)
                 print('Packing {} B particles ..'.format(self.num_b))
                 mix_box = mb.packing.solvate(mix_box, C10(), self.num_c10,
-                                             box=self.box,overlap=0.5)
+                                             box=self.box)#,overlap=0.5)
                 print('Packing {} C10 particles ..'.format(self.num_c10))
             else:
                 blend = Epoxy_A_10_B_20_C10_2_Blend()
@@ -121,7 +121,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         # Mix Step/MD Setup
         super().setup_mixing_run()
         dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=self.mix_kT, seed=123456)
-        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=0.0 , gamma=self.gamma)
+        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
         dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
         dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
 
