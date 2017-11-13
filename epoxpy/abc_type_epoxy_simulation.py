@@ -67,7 +67,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.num_b = int(num_b * n_mul)
         self.num_c10 = int(num_c10 * n_mul)
         self.n_mul = n_mul
-        self.harmonic = None
         self.group_a = None
         self.group_b = None
         self.group_c = None
@@ -169,12 +168,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_b = hoomd.group.type(name='b-particles', type='B')
         self.group_c = hoomd.group.type(name='c-particles', type='C')
         self.msd_groups = [self.group_a, self.group_b, self.group_c]
-
-        if self.num_b > 0 and self.num_c10 > 0:
-            self.harmonic = md.bond.harmonic()
-            self.harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
-            self.harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
-
         self.nl = md.nlist.tree()#cell()
         self.nl.reset_exclusions(exclusions = []);
 
@@ -195,16 +188,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         self.group_b = hoomd.group.type(name='b-particles', type='B')
         self.group_c = hoomd.group.type(name='c-particles', type='C')
         self.msd_groups = [self.group_a, self.group_b, self.group_c]
-
         self.nl = md.nlist.tree()#cell()
-
-        if self.num_b > 0 and self.num_c10 > 0:
-            self.harmonic = md.bond.harmonic()
-            self.harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
-            self.harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
-            print('C-C bond constant:',self.CC_bond_const,'C-C bond dist:',self.CC_bond_dist)
         self.nl.reset_exclusions(exclusions = []);
-
         if self.bond is True:
             if self.use_dybond_plugin is True:
                 self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)

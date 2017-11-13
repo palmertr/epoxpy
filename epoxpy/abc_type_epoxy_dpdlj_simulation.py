@@ -40,9 +40,9 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         self.AC_interaction = AC_interaction
         self.BC_interaction = BC_interaction
         self.AA_alpha = AA_alpha
-        self.AB_alpha = AB_alpha       
+        self.AB_alpha = AB_alpha
         self.AC_alpha = AC_alpha
-        self.BC_alpha = BC_alpha       
+        self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
         self.shrinkT = 5.0
 
@@ -128,6 +128,10 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         super().setup_mixing_run()
+        if self.num_b > 0 and self.num_c10 > 0:
+            harmonic = md.bond.harmonic()
+            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
         dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=self.mix_kT, seed=123456)
         dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
         dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
@@ -139,15 +143,19 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
 
     def setup_md_run(self):
         super().setup_md_run()
+        if self.num_b > 0 and self.num_c10 > 0:
+            harmonic = md.bond.harmonic()
+            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
+            print('C-C bond constant:',self.CC_bond_const,'C-C bond dist:',self.CC_bond_dist)
         profile = self.temp_prof.get_profile()
         print('temperature profile {}'.format(profile.points))
-
         dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=profile, seed=123456)
         dpdlj.set_params(kT=profile)
         dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
         dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
         dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-                                                                                                          
+
         dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
         dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
         dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
