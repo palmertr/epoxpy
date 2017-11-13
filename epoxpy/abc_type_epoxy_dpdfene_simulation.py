@@ -127,7 +127,7 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
         # Mix Step/MD Setup
         super().setup_mixing_run()
         if self.num_b > 0 and self.num_c10 > 0:
-            fene = md.bond.harmonic()
+            fene = md.bond.fene()
             fene.bond_coeff.set('C-C', k=self.CC_bond_const,\
                                 r0=self.CC_maxr,sigma=self.CC_bond_dist,epsilon=1.0)
             fene.bond_coeff.set('A-B', k=self.AB_bond_const,\
@@ -144,7 +144,7 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
     def setup_md_run(self):
         super().setup_md_run()
         if self.num_b > 0 and self.num_c10 > 0:
-            fene = md.bond.harmonic()
+            fene = md.bond.fene()
             fene.bond_coeff.set('C-C', k=self.CC_bond_const,\
                                 r0=self.CC_maxr,sigma=self.CC_bond_dist,epsilon=1.0)
             fene.bond_coeff.set('A-B', k=self.AB_bond_const,\
