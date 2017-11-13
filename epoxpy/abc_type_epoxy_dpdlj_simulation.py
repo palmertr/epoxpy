@@ -22,6 +22,10 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
                  AC_interaction=1.0,
                  BC_interaction=1.0,
                  shrink_time=1e6,
+                 AA_alpha=1.0,
+                 AB_alpha=0.0,
+                 AC_alpha=0.0,
+                 BC_alpha=0.0,
                  *args,
                  **kwargs):
         ABCTypeEpoxySimulation.__init__(self,
@@ -35,6 +39,10 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         self.AB_interaction = AB_interaction
         self.AC_interaction = AC_interaction
         self.BC_interaction = BC_interaction
+        self.AA_alpha = AA_alpha
+        self.AB_alpha = AB_alpha       
+        self.AC_alpha = AC_alpha
+        self.BC_alpha = BC_alpha       
         self.shrink_time = shrink_time
         self.shrinkT = 5.0
 
@@ -121,13 +129,13 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         # Mix Step/MD Setup
         super().setup_mixing_run()
         dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=self.mix_kT, seed=123456)
-        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
+        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
 
-        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma)
+        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
+        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
+        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
 
     def setup_md_run(self):
         super().setup_md_run()
@@ -136,11 +144,11 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
 
         dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=profile, seed=123456)
         dpdlj.set_params(kT=profile)
-        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma)
-
-        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma)
-        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma)
+        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+                                                                                                          
+        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
+        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
+        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
 
