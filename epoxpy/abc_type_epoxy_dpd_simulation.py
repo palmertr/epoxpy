@@ -30,7 +30,7 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.dpd = None
 
     def get_log_quantities(self):
-        log_quantities = super().get_log_quantities()+["pair_dpd_energy"]
+        log_quantities = super().get_log_quantities()+["pair_dpd_energy","bond_harmonic_energy"]
         return log_quantities
 
     def setup_mixing_run(self):

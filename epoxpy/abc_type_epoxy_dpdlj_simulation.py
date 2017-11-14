@@ -47,7 +47,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         self.shrinkT = 5.0
 
     def get_log_quantities(self):
-        log_quantities = super().get_log_quantities()+["pair_dpdlj_energy"]
+        log_quantities = super().get_log_quantities()+["pair_dpdlj_energy","bond_harmonic_energy"]
         return log_quantities
 
     def set_initial_structure(self):

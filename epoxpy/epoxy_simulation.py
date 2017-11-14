@@ -169,7 +169,7 @@ class EpoxySimulation(Simulation):
 
     def get_log_quantities(self):
         log_quantities = ["volume", "momentum", "potential_energy",
-                "kinetic_energy","temperature", "pressure","bond_harmonic_energy"]
+                "kinetic_energy","temperature", "pressure"]
         return log_quantities
 
     def configure_outputs(self):

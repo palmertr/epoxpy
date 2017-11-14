@@ -45,7 +45,7 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
         self.AB_maxr = 1.5
 
     def get_log_quantities(self):
-        log_quantities = super().get_log_quantities()+["pair_dpdlj_energy"]
+        log_quantities = super().get_log_quantities()+["pair_dpdlj_energy","bond_fene_energy"]
         return log_quantities
 
     def set_initial_structure(self):
