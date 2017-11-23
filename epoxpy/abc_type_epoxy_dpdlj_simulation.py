@@ -110,7 +110,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
             self.setup_mixing_run()
             size_variant =\
             variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
-            md.integrate.mode_standard(dt=self.dt)
+            md.integrate.mode_standard(dt=self.mix_dt)
             md.integrate.langevin(group=hoomd.group.all(),
                                   kT=self.shrinkT,
                                   seed=1223445)#self.seed)

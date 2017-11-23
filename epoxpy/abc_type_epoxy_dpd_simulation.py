@@ -36,6 +36,10 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         super().setup_mixing_run()
+        if self.num_b > 0 and self.num_c10 > 0:
+            harmonic = md.bond.harmonic()
+            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
         self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=self.mix_kT, seed=123456)
         self.dpd.pair_coeff.set('A', 'A', A=self.AA_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('B', 'B', A=self.AA_interaction, gamma=self.gamma)
@@ -47,6 +51,10 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
 
     def setup_md_run(self):
         super().setup_md_run()
+        if self.num_b > 0 and self.num_c10 > 0:
+            harmonic = md.bond.harmonic()
+            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
         profile = self.temp_prof.get_profile()
         print('temperature profile {}'.format(profile.points))
         self.dpd = md.pair.dpd(r_cut=1.0, nlist=self.nl, kT=profile, seed=123456)

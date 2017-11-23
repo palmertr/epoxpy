@@ -21,6 +21,10 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
                  AB_interaction=1.0,
                  AC_interaction=1.0,
                  BC_interaction=1.0,
+                 AA_alpha=0.0,
+                 AB_alpha=0.0,
+                 AC_alpha=0.0,
+                 BC_alpha=0.0,
                  shrink_time=1e6,
                  *args,
                  **kwargs):
@@ -35,10 +39,10 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
         self.AB_interaction = AB_interaction
         self.AC_interaction = AC_interaction
         self.BC_interaction = BC_interaction
-        self.AA_alpha = 0.0
-        self.AB_alpha = 0.0
-        self.AC_alpha = 0.0
-        self.BC_alpha = 0.0
+        self.AA_alpha = AA_alpha
+        self.AB_alpha = AB_alpha
+        self.AC_alpha = AC_alpha
+        self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
         self.shrinkT = 5.0
         self.CC_maxr = 1.5
@@ -108,7 +112,7 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
             self.setup_mixing_run()
             size_variant =\
             variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
-            md.integrate.mode_standard(dt=self.dt)
+            md.integrate.mode_standard(dt=self.mix_dt)
             md.integrate.langevin(group=hoomd.group.all(),
                                   kT=self.shrinkT,
                                   seed=1223445)#self.seed)
