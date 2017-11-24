@@ -1,4 +1,5 @@
 from epoxpy.abc_type_epoxy_simulation import ABCTypeEpoxySimulation
+import hoomd
 from hoomd import md
 
 class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
@@ -48,6 +49,8 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.dpd.pair_coeff.set('A', 'B', A=self.AB_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
+        md.integrate.mode_standard(dt=self.mix_dt)
+        md.integrate.nve(group=hoomd.group.all())
 
     def setup_md_run(self):
         super().setup_md_run()
@@ -66,4 +69,5 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.dpd.pair_coeff.set('A', 'B', A=self.AB_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('A', 'C', A=self.AC_interaction, gamma=self.gamma)
         self.dpd.pair_coeff.set('B', 'C', A=self.BC_interaction, gamma=self.gamma)
-
+        md.integrate.mode_standard(dt=self.md_dt)
+        md.integrate.nve(group=hoomd.group.all())

@@ -107,7 +107,8 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
             self.system.restore_snapshot(snapshot)
 
         if self.shrink is True:
-            self.setup_mixing_run()
+            super().setup_mixing_run()
+            self.setup_forcefields()
             size_variant =\
             variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
             md.integrate.mode_standard(dt=self.mix_dt)
@@ -125,9 +126,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def setup_mixing_run(self):
-        # Mix Step/MD Setup
-        super().setup_mixing_run()
+    def setup_forcefields(self):
         if self.num_b > 0 and self.num_c10 > 0:
             harmonic = md.bond.harmonic()
             harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
@@ -140,6 +139,13 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
         dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
         dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
+
+    def setup_mixing_run(self):
+        # Mix Step/MD Setup
+        super().setup_mixing_run()
+        self.setup_forcefields()
+        md.integrate.mode_standard(dt=self.mix_dt)
+        md.integrate.nve(group=hoomd.group.all())
 
     def setup_md_run(self):
         super().setup_md_run()
@@ -159,4 +165,5 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
         dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
         dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
-
+        md.integrate.mode_standard(dt=self.md_dt)
+        md.integrate.nve(group=hoomd.group.all())

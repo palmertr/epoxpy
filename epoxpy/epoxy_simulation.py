@@ -200,8 +200,6 @@ class EpoxySimulation(Simulation):
         self.silent_remove(os.path.join(self.output_dir, self.bond_rank_hist_file))
 
     def run_mixing(self):
-        md.integrate.mode_standard(dt=self.mix_dt)
-        md.integrate.nve(group=hoomd.group.all())
         hoomd.run(self.mix_time)
         if self.mixed_file_name.endswith('.hoomdxml'):
             deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
@@ -234,8 +232,6 @@ class EpoxySimulation(Simulation):
         print('Reset the system temperature to {} kT after mixing'.format(kT))
 
     def run_md(self):
-        md.integrate.mode_standard(dt=self.md_dt)
-        md.integrate.nve(group=hoomd.group.all())
         first_target_temperature = self.temp_prof.temperature_profile[0][1]
         self.set_initial_particle_velocities(first_target_temperature)
         hoomd.run(self.md_time)
