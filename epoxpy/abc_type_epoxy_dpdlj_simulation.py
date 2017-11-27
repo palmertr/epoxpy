@@ -22,6 +22,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
                  AC_interaction=1.0,
                  BC_interaction=1.0,
                  shrink_time=1e6,
+                 shrinkT=2.0,
                  AA_alpha=1.0,
                  AB_alpha=0.0,
                  AC_alpha=0.0,
@@ -44,7 +45,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         self.AC_alpha = AC_alpha
         self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
-        self.shrinkT = 5.0
+        self.shrinkT = shrinkT
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["pair_dpdlj_energy","bond_harmonic_energy"]
@@ -108,7 +109,7 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
 
         if self.shrink is True:
             super().setup_mixing_run()
-            self.setup_forcefields()
+            self.setup_forcefields(self.mix_kT)
             size_variant =\
             variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
             md.integrate.mode_standard(dt=self.mix_dt)
@@ -126,12 +127,12 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def setup_forcefields(self):
+    def setup_forcefields(self,kT):
         if self.num_b > 0 and self.num_c10 > 0:
             harmonic = md.bond.harmonic()
             harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
             harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
-        dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=self.mix_kT, seed=123456)
+        dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=kT, seed=123456)
         dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
         dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
         dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
@@ -143,27 +144,14 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         super().setup_mixing_run()
-        self.setup_forcefields()
+        self.setup_forcefields(self.mix_kT)
         md.integrate.mode_standard(dt=self.mix_dt)
         md.integrate.nve(group=hoomd.group.all())
 
     def setup_md_run(self):
         super().setup_md_run()
-        if self.num_b > 0 and self.num_c10 > 0:
-            harmonic = md.bond.harmonic()
-            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
-            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
-            print('C-C bond constant:',self.CC_bond_const,'C-C bond dist:',self.CC_bond_dist)
         profile = self.temp_prof.get_profile()
         print('temperature profile {}'.format(profile.points))
-        dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=profile, seed=123456)
-        dpdlj.set_params(kT=profile)
-        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-
-        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
-        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
-        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
+        self.setup_forcefields(profile)
         md.integrate.mode_standard(dt=self.md_dt)
         md.integrate.nve(group=hoomd.group.all())
