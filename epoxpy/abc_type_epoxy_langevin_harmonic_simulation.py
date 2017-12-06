@@ -128,6 +128,17 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
     def setup_forcefields(self):
+        if self.DEBUG:
+            print('=============force fields parameters==============')
+            print('self.CC_bond_const',self.CC_bond_const)
+            print('self.CC_bond_dist',self.CC_bond_dist)
+            print('self.AB_bond_const',self.AB_bond_const)
+            print('self.AB_bond_dist',self.AB_bond_dist)
+            print('self.AA_interaction',self.AA_interaction)
+            print('self.AB_interaction',self.AB_interaction)
+            print('self.AC_interaction',self.AC_interaction)
+            print('self.BC_interaction',self.BC_interaction)
+            print('self.gamma',self.gamma)
         if self.num_b > 0 and self.num_c10 > 0:
             harmonic = md.bond.harmonic()
             harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
@@ -155,6 +166,7 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
         profile = self.temp_prof.get_profile()
         print('temperature profile {}'.format(profile.points))
         self.setup_forcefields()
+        print('===========================md_dt=====================',self.md_dt)
         md.integrate.mode_standard(dt=self.md_dt)
         bd=md.integrate.langevin(group=hoomd.group.all(),
                         kT=profile,

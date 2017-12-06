@@ -115,6 +115,7 @@ class EpoxySimulation(Simulation):
         self.curing_log_period = 1e5
         self.curing_log = []
         self.bond_rank_log = []
+        self.DEBUG = False
 
         # for tests which compare simulation result against a benchmark
         # please see issue 6 for more details
