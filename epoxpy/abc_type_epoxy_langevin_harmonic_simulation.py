@@ -155,14 +155,18 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         super().setup_mixing_run()
+        self.nl.reset_exclusions(exclusions = ['bond']);
         self.setup_forcefields()
         bd=md.integrate.langevin(group=hoomd.group.all(),
                         kT=self.mix_kT,
                         seed=1223445,noiseless_t=False, noiseless_r=False)
         bd.set_gamma('A', gamma=self.gamma)
+        bd.set_gamma('B', gamma=self.gamma)
+        bd.set_gamma('C', gamma=self.gamma)
 
     def setup_md_run(self):
         super().setup_md_run()
+        self.nl.reset_exclusions(exclusions = ['bond']);
         profile = self.temp_prof.get_profile()
         print('temperature profile {}'.format(profile.points))
         self.setup_forcefields()
@@ -172,3 +176,5 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
                         kT=profile,
                         seed=1223445,noiseless_t=False, noiseless_r=False)
         bd.set_gamma('A', gamma=self.gamma)
+        bd.set_gamma('B', gamma=self.gamma)
+        bd.set_gamma('C', gamma=self.gamma)

@@ -74,9 +74,9 @@ class EpoxySimulation(Simulation):
         self.bond_period = bond_period
         self.bond_radius = bond_radius
         self.mix_kT = mix_kt
-        final_time = temp_prof.get_total_sim_time()
-        md__total_time = final_time - mix_time
-        self.md_time = md__total_time
+        #final_time = temp_prof.get_total_sim_time()
+        #md__total_time = final_time - mix_time
+        self.md_time = temp_prof.get_total_sim_time()#md__total_time
         print('md time: {}'.format(self.md_time))
         self.temp_prof = temp_prof
         self.log_write = log_write
