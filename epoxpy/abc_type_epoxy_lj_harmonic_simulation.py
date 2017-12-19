@@ -57,7 +57,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         self.P = P
 
     def get_log_quantities(self):
-        log_quantities = super().get_log_quantities()+["bond_harmonic_energy"]
+        log_quantities = super().get_log_quantities()+["pair_lj_energy", "bond_harmonic_energy"]
         return log_quantities
 
     def get_non_bonded_neighbourlist(self):

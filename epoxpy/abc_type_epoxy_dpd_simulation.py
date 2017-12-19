@@ -36,6 +36,15 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.BC_interaction = BC_interaction
         self.dpd = None
 
+    def get_log_quantities(self):
+        log_quantities = super().get_log_quantities()+["pair_dpd_energy","bond_harmonic_energy"]
+        return log_quantities
+
+    def get_non_bonded_neighbourlist(self):
+        nl = md.nlist.tree()  # cell()
+        nl.reset_exclusions(exclusions=[]);
+        return nl
+
     def set_initial_structure(self):
         print('========INITIAIZING FOR DPD==========')
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
@@ -96,15 +105,6 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
             deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
-
-    def get_log_quantities(self):
-        log_quantities = super().get_log_quantities()+["pair_dpd_energy","bond_harmonic_energy"]
-        return log_quantities
-
-    def get_non_bonded_neighbourlist(self):
-        nl = md.nlist.tree()  # cell()
-        nl.reset_exclusions(exclusions=[]);
-        return nl
 
     def setup_force_fields(self, stage):
         if self.DEBUG:
