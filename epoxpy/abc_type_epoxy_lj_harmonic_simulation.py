@@ -51,7 +51,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
         self.shrinkT = shrinkT
-        self.integrator = integrator
+        self.integrator = cmn.Integrators[integrator]
         self.tau = tau
         self.tauP = tauP
         self.P = P
@@ -165,6 +165,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         lj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0, alpha=self.BC_alpha)
 
     def setup_integrator(self, stage):
+        print('=============Setting up {} integrator for {}: {}'.format(self.integrator.name, stage.name))
         if stage == cmn.Stages.MIXING:
             temperature = self.mix_kT
             dt = self.mix_dt
@@ -175,7 +176,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
             dt = self.md_dt
             print('========= CURING TEMPERATURE:', temperature, '=============')
         md.integrate.mode_standard(dt=dt)
-        if self.integrator==cmn.Integrators.LANGEVIN:
+        if self.integrator == cmn.Integrators.LANGEVIN:
             integrator = md.integrate.langevin(group=hoomd.group.all(),
                                                kT=temperature,
                                                seed=1223445,
