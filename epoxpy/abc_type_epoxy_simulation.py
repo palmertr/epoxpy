@@ -1,14 +1,11 @@
 from epoxpy.epoxy_simulation import EpoxySimulation
-from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 from epoxpy.bonding import LegacyBonding, FreudBonding
 import hoomd
 import hoomd.dybond_plugin as db
 from hoomd import md
 from hoomd import deprecated
-import mbuild as mb
 import os
 import numpy as np
-import epoxpy.init as my_init
 from abc import ABCMeta, abstractmethod
 from collections import Counter
 import epoxpy.common as cmn
@@ -94,66 +91,6 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         msd_groups = [self.group_a, self.group_b, self.group_c]
         return msd_groups
 
-    def set_initial_structure(self): # TODO this needs to be set in the base class or something
-        desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
-        desired_box_dim = (desired_box_volume ** (1./3.))
-        self.box = [desired_box_dim, desired_box_dim, desired_box_dim]
-        if self.old_init == True:
-            print("\n\n ===USING OLD INIT=== \n\n")
-            As = my_init.Bead(btype="A", mass=A.mass)
-            Bs = my_init.Bead(btype="B", mass=B.mass)
-            C10s = my_init.PolyBead(btype="C", mass = 1.0, N = 10) # Hardcode C10, with mon-mass 1.0
-            snap = my_init.init_system({As : int(self.num_a), Bs :int(self.num_b), C10s : int(self.num_c10)}, self.density)
-            self.system = hoomd.init.read_snapshot(snap)
-        else:
-            if self.shrink is True:
-                print('Packing {} A particles ..'.format(self.num_a))
-                mix_box = mb.packing.fill_box(A(), self.num_a, box=self.box)
-                mix_box = mb.packing.solvate(mix_box, B(), self.num_b, box=self.box)
-                print('Packing {} B particles ..'.format(self.num_b))
-                mix_box = mb.packing.solvate(mix_box, C10(), self.num_c10, box=self.box)
-                print('Packing {} C10 particles ..'.format(self.num_c10))
-            else:
-                blend = Epoxy_A_10_B_20_C10_2_Blend()
-                mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
-
-            if self.init_file_name.endswith('.hoomdxml'):
-                mix_box.save(self.init_file_name)
-            elif self.init_file_name.endswith('.gsd'):
-                mix_box.save(self.init_file_name, write_ff=False)
-
-            if self.init_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
-            elif self.init_file_name.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.init_file_name)
-
-            print('Initial box dimension: {}'.format(self.system.box.dimensions))
-
-            snapshot = self.system.take_snapshot(bonds=True)
-            for p_id in range(snapshot.particles.N):
-                p_types = snapshot.particles.types
-                p_type = p_types[snapshot.particles.typeid[p_id]]
-                if p_type == 'A':
-                    snapshot.particles.mass[p_id] = A.mass
-                if p_type == 'B':
-                    snapshot.particles.mass[p_id] = B.mass
-                if p_type == 'C':
-                    snapshot.particles.mass[p_id] = C.mass
-            print(snapshot.bonds.types)
-            snapshot.bonds.types = ['C-C', 'A-B']
-            self.system.restore_snapshot(snapshot)
-
-        if self.shrink is True:
-            hoomd.update.box_resize(period=1, L=desired_box_dim)
-            hoomd.run(self.shrink_time)
-            snapshot = self.system.take_snapshot()
-            print('Initial box dimension: {}'.format(snapshot.box))
-
-        if self.init_file_name.endswith('.hoomdxml'):
-            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-        elif self.init_file_name.endswith('.gsd'):
-            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
-
     def initialize_system_from_file(self, file_path, use_time_step_from_file=True):
         if use_time_step_from_file:
             time_step = None
@@ -176,7 +113,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def setup_force_fields(self):
+    def setup_force_fields(self, stage):
         pass
 
     @abstractmethod
@@ -187,7 +124,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         # Mix Step/MD Setup
         print('==============Setting up MIXING run=================')
         self.nl = self.get_non_bonded_neighbourlist()
-        self.setup_force_fields()
+        if self.nl is None:
+            raise Exception('Neighbourlist is not set')
+        self.setup_force_fields(stage=cmn.Stages.MIXING)
         self.setup_integrator(stage=cmn.Stages.MIXING)
 
     def print_curing_and_stop_updater(self, bond_percent):
@@ -204,7 +143,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
 
     def setup_md_run(self):
         self.nl = self.get_non_bonded_neighbourlist()
-        self.setup_force_fields()
+        self.setup_force_fields(stage=cmn.Stages.CURING)
         self.setup_integrator(stage=cmn.Stages.CURING)
         if self.bond is True:
             if self.use_dybond_plugin is True:

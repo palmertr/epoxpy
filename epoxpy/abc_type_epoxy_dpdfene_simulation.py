@@ -2,11 +2,12 @@ from epoxpy.abc_type_epoxy_simulation import ABCTypeEpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 import epoxpy.init as my_init
 import hoomd
-import hoomd.dybond_plugin as db
 from hoomd import md
 from hoomd import deprecated
 from hoomd import variant
 import mbuild as mb
+import epoxpy.common as cmn
+
 
 class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
     """Simulations class for ABCTypeEpoxySimulation where LJ is used as the
@@ -52,8 +53,13 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
         log_quantities = super().get_log_quantities()+["pair_dpdlj_energy","bond_fene_energy"]
         return log_quantities
 
+    def get_non_bonded_neighbourlist(self):
+        nl = md.nlist.tree()  # cell()
+        nl.reset_exclusions(exclusions=[]);
+        return nl
+
     def set_initial_structure(self):
-        print('========INITIAIZING FOR LJ==========')
+        print('========INITIAIZING FOR DPD FENE==========')
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
         self.box = [desired_box_dim, desired_box_dim,
@@ -109,16 +115,14 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
             self.system.restore_snapshot(snapshot)
 
         if self.shrink is True:
-            super().setup_mixing_run()
-            self.setup_forcefields(self.mix_kT)
-            size_variant =\
-            variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
+            self.nl = self.get_non_bonded_neighbourlist()
+            self.setup_force_fields(stage=cmn.Stages.MIXING)
+            size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time,desired_box_dim)])
             md.integrate.mode_standard(dt=self.mix_dt)
             md.integrate.langevin(group=hoomd.group.all(),
                                   kT=self.shrinkT,
                                   seed=1223445)#self.seed)
-            resize=hoomd.update.box_resize(L=size_variant)
-            #hoomd.update.box_resize(period=1, L=desired_box_dim)
+            resize = hoomd.update.box_resize(L=size_variant)
             hoomd.run(self.shrink_time)
             snapshot = self.system.take_snapshot()
             print('Initial box dimension: {}'.format(snapshot.box))
@@ -128,34 +132,48 @@ class ABCTypeEpoxyDPDFENESimulation(ABCTypeEpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def setup_forcefields(self,kT):
+    def setup_force_fields(self, stage):
+        if self.DEBUG:
+            print('=============force fields parameters==============')
+            print('self.CC_bond_const', self.CC_bond_const)
+            print('self.CC_bond_dist', self.CC_bond_dist)
+            print('self.AB_bond_const', self.AB_bond_const)
+            print('self.AB_bond_dist', self.AB_bond_dist)
+            print('self.AA_interaction', self.AA_interaction)
+            print('self.AB_interaction', self.AB_interaction)
+            print('self.AC_interaction', self.AC_interaction)
+            print('self.BC_interaction', self.BC_interaction)
+            print('self.gamma', self.gamma)
+
+        if stage == cmn.Stages.MIXING:
+            temperature = self.mix_kT
+            print('========= MIXING TEMPERATURE:', temperature, '=============')
+        elif stage == cmn.Stages.CURING:
+            profile = self.temp_prof.get_profile()
+            temperature = profile
+            print('========= CURING TEMPERATURE:', temperature, '=============')
+
         if self.num_b > 0 and self.num_c10 > 0:
             fene = md.bond.fene()
-            fene.bond_coeff.set('C-C', k=self.CC_bond_const,\
-                                r0=self.CC_maxr,sigma=self.CC_bond_dist,epsilon=1.0)
-            fene.bond_coeff.set('A-B', k=self.AB_bond_const,\
-                                r0=self.AB_maxr,sigma=self.AB_bond_dist,epsilon=self.AB_interaction)
-        dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=kT, seed=123456)
-        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
-        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AA_alpha)
+            fene.bond_coeff.set('C-C', k=self.CC_bond_const,
+                                r0=self.CC_maxr, sigma=self.CC_bond_dist, epsilon=1.0)
+            fene.bond_coeff.set('A-B', k=self.AB_bond_const,
+                                r0=self.AB_maxr, sigma=self.AB_bond_dist, epsilon=self.AB_interaction)
+        dpdlj = md.pair.dpdlj(r_cut=2.5, nlist=self.nl, kT=temperature, seed=123456)
+        dpdlj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0, gamma=self.gamma, alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0, gamma=self.gamma, alpha=self.AA_alpha)
+        dpdlj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0, gamma=self.gamma, alpha=self.AA_alpha)
 
-        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AB_alpha)
-        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.AC_alpha)
-        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , gamma=self.gamma,alpha=self.BC_alpha)
+        dpdlj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0, gamma=self.gamma, alpha=self.AB_alpha)
+        dpdlj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0, gamma=self.gamma, alpha=self.AC_alpha)
+        dpdlj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0, gamma=self.gamma, alpha=self.BC_alpha)
 
-    def setup_mixing_run(self):
-        # Mix Step/MD Setup
-        super().setup_mixing_run()
-        self.setup_forcefields(self.mix_kT)
-        md.integrate.mode_standard(dt=self.mix_dt)
+    def setup_integrator(self, stage):
+        if stage == cmn.Stages.MIXING:
+            dt = self.mix_dt
+            print('========= MIXING dt:', dt, '=============')
+        elif stage == cmn.Stages.CURING:
+            dt = self.md_dt
+            print('========= CURING dt:', dt, '=============')
+        md.integrate.mode_standard(dt=dt)
         md.integrate.nve(group=hoomd.group.all())
-
-    def setup_md_run(self):
-        super().setup_md_run()
-        profile = self.temp_prof.get_profile()
-        print('temperature profile {}'.format(profile.points))
-        self.setup_forcefields(profile)
-        md.integrate.mode_standard(dt=self.md_dt)
-        md.integrate.nve(group=hoomd.group.all())
-

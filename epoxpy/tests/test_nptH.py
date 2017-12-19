@@ -5,6 +5,8 @@ import random
 import os
 import gsd.hoomd
 import numpy as np
+import epoxpy.common as cmn
+
 
 random.seed(1020)
 
@@ -26,6 +28,7 @@ myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mi
                                        mix_dt=1e-4,
                                        md_dt=1e-2,
                                        output_dir=out_dir,
+                                       integrator=cmn.Integrators.NPT,
                                        use_dybond_plugin=True)
 
 myEpoxySim.execute()

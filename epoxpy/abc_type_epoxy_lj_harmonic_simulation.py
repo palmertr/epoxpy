@@ -2,7 +2,6 @@ from epoxpy.abc_type_epoxy_simulation import ABCTypeEpoxySimulation
 from epoxpy.lib import A, B, C, C10, Epoxy_A_10_B_20_C10_2_Blend
 import epoxpy.init as my_init
 import hoomd
-import hoomd.dybond_plugin as db
 from hoomd import md
 from hoomd import deprecated
 from hoomd import variant
@@ -10,7 +9,7 @@ import mbuild as mb
 import epoxpy.common as cmn
 
 
-class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
+class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
     """Simulations class for ABCTypeEpoxySimulation where LJ is used as the
     conservative force and uses the langevin integrator.
        """
@@ -29,6 +28,10 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
                  AB_alpha=0.0,
                  AC_alpha=0.0,
                  BC_alpha=0.0,
+                 tau=0.1,
+                 tauP=0.2,
+                 P=1.0,
+                 integrator=cmn.Integrators.LANGEVIN,
                  *args,
                  **kwargs):
         ABCTypeEpoxySimulation.__init__(self,
@@ -48,6 +51,10 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
         self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
         self.shrinkT = shrinkT
+        self.integrator = integrator
+        self.tau = tau
+        self.tauP = tauP
+        self.P = P
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["bond_harmonic_energy"]
@@ -116,15 +123,13 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
 
         if self.shrink is True:
             self.nl = self.get_non_bonded_neighbourlist()
-            self.setup_force_fields()
-            size_variant =\
-            variant.linear_interp([(0,self.system.box.Lx), (self.shrink_time,desired_box_dim)])
+            self.setup_force_fields(stage=cmn.Stages.MIXING)
+            size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time, desired_box_dim)])
             md.integrate.mode_standard(dt=self.mix_dt)
             md.integrate.langevin(group=hoomd.group.all(),
                                   kT=self.shrinkT,
-                                  seed=1223445)#self.seed)
-            resize=hoomd.update.box_resize(L=size_variant)
-            #hoomd.update.box_resize(period=1, L=desired_box_dim)
+                                  seed=1223445)  # self.seed)
+            resize = hoomd.update.box_resize(L=size_variant)
             hoomd.run(self.shrink_time)
             snapshot = self.system.take_snapshot()
             print('Initial box dimension: {}'.format(snapshot.box))
@@ -134,7 +139,7 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def setup_force_fields(self):
+    def setup_force_fields(self, stage):
         if self.DEBUG:
             print('=============force fields parameters==============')
             print('self.CC_bond_const', self.CC_bond_const)
@@ -162,17 +167,26 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
     def setup_integrator(self, stage):
         if stage == cmn.Stages.MIXING:
             temperature = self.mix_kT
-            print('========= MIXING TEMPERATURE:',temperature,'=============')
+            dt = self.mix_dt
+            print('========= MIXING TEMPERATURE:', temperature, '=============')
         elif stage == cmn.Stages.CURING:
             profile = self.temp_prof.get_profile()
             temperature = profile
-            print('========= CURING TEMPERATURE:',temperature,'=============')
-        md.integrate.mode_standard(dt=self.md_dt)
-        integrator = md.integrate.langevin(group=hoomd.group.all(),
-                                           kT=temperature,
-                                           seed=1223445,
-                                           noiseless_t=False,
-                                           noiseless_r=False)
-        integrator.set_gamma('A', gamma=self.gamma)
-        integrator.set_gamma('B', gamma=self.gamma)
-        integrator.set_gamma('C', gamma=self.gamma)
+            dt = self.md_dt
+            print('========= CURING TEMPERATURE:', temperature, '=============')
+        md.integrate.mode_standard(dt=dt)
+        if self.integrator==cmn.Integrators.LANGEVIN:
+            integrator = md.integrate.langevin(group=hoomd.group.all(),
+                                               kT=temperature,
+                                               seed=1223445,
+                                               noiseless_t=False,
+                                               noiseless_r=False)
+            integrator.set_gamma('A', gamma=self.gamma)
+            integrator.set_gamma('B', gamma=self.gamma)
+            integrator.set_gamma('C', gamma=self.gamma)
+        elif self.integrator == cmn.Integrators.NPT:
+            integrator = md.integrate.npt(group=hoomd.group.all(),
+                                          tau=self.tau,
+                                          tauP=self.tauP,
+                                          P=self.P,
+                                          kT=temperature)
