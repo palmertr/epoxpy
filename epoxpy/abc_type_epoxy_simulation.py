@@ -9,10 +9,12 @@ import mbuild as mb
 import os
 import numpy as np
 import epoxpy.init as my_init
+from abc import ABCMeta, abstractmethod
 from collections import Counter
+import epoxpy.common as cmn
 
 
-class ABCTypeEpoxySimulation(EpoxySimulation):
+class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
     MAX_A_BONDS=4
     MAX_B_BONDS=2#This ratio is stoichiometric by default (see num_a and num_b defaults)
     """Simulations class for setting initial condition and force field specific to the ABC coarse grained Epoxy blend.
@@ -84,6 +86,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
 
     def get_log_quantities(self):
         return super().get_log_quantities()
+
+    def get_msd_groups(self):
+        self.group_a = hoomd.group.type(name='a-particles', type='A')
+        self.group_b = hoomd.group.type(name='b-particles', type='B')
+        self.group_c = hoomd.group.type(name='c-particles', type='C')
+        msd_groups = [self.group_a, self.group_b, self.group_c]
+        return msd_groups
 
     def set_initial_structure(self): # TODO this needs to be set in the base class or something
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
@@ -162,14 +171,24 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
 
+    @abstractmethod
+    def get_non_bonded_neighbourlist(self):
+        pass
+
+    @abstractmethod
+    def setup_force_fields(self):
+        pass
+
+    @abstractmethod
+    def setup_integrator(self, stage):
+        pass
+
     def setup_mixing_run(self):
         # Mix Step/MD Setup
-        self.group_a = hoomd.group.type(name='a-particles', type='A')
-        self.group_b = hoomd.group.type(name='b-particles', type='B')
-        self.group_c = hoomd.group.type(name='c-particles', type='C')
-        self.msd_groups = [self.group_a, self.group_b, self.group_c]
-        self.nl = md.nlist.tree()#cell()
-        self.nl.reset_exclusions(exclusions = []);
+        print('==============Setting up MIXING run=================')
+        self.nl = self.get_non_bonded_neighbourlist()
+        self.setup_force_fields()
+        self.setup_integrator(stage=cmn.Stages.MIXING)
 
     def print_curing_and_stop_updater(self, bond_percent):
         print("HIT OUR TARGET: {}".format(self.stop_after_percent))
@@ -184,12 +203,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             hoomd.context.msg.warning('Call back for stopping the bonding is not set!')
 
     def setup_md_run(self):
-        self.group_a = hoomd.group.type(name='a-particles', type='A')
-        self.group_b = hoomd.group.type(name='b-particles', type='B')
-        self.group_c = hoomd.group.type(name='c-particles', type='C')
-        self.msd_groups = [self.group_a, self.group_b, self.group_c]
-        self.nl = md.nlist.tree()#cell()
-        self.nl.reset_exclusions(exclusions = []);
+        self.nl = self.get_non_bonded_neighbourlist()
+        self.setup_force_fields()
+        self.setup_integrator(stage=cmn.Stages.CURING)
         if self.bond is True:
             if self.use_dybond_plugin is True:
                 self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
@@ -208,12 +224,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation):
             else:
                 self.log_bond_temp = hoomd.analyze.log(filename=None, quantities=["temperature"],
                                                         period=self.bond_period)
+                msd_groups = self.get_msd_groups()
                 if self.legacy_bonding is True:
-                    self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
+                    self.bonding = LegacyBonding(system=self.system, groups=msd_groups, log=self.log_bond_temp,
                                                  activation_energy=self.activation_energy,
                                              sec_bond_weight=self.sec_bond_weight)
                 else:
-                    self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=self.log_bond_temp,
+                    self.bonding = FreudBonding(system=self.system, groups=msd_groups, log=self.log_bond_temp,
                                                 activation_energy=self.activation_energy,
                                             sec_bond_weight=self.sec_bond_weight)
                 self.bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)

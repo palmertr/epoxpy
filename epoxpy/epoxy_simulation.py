@@ -10,7 +10,7 @@ import numpy as np
 import os, errno
 
 
-class EpoxySimulation(Simulation):
+class EpoxySimulation(Simulation, metaclass=ABCMeta):
     """Common base class for all epoxy simulations.
           sim_name : name of simulation
           mix_time : number of time steps to run the equilibration (NVE simulation to get a nicely "shaken" phase)
@@ -82,7 +82,6 @@ class EpoxySimulation(Simulation):
         self.log_write = log_write
         self.dcd_write = dcd_write
         self.box = box
-        self.msd_groups = None
         self.system = None
         self.mix_dt = mix_dt
         self.md_dt = md_dt
@@ -115,7 +114,7 @@ class EpoxySimulation(Simulation):
         self.curing_log_period = 1e5
         self.curing_log = []
         self.bond_rank_log = []
-        self.DEBUG = False
+        self.DEBUG = True
 
         # for tests which compare simulation result against a benchmark
         # please see issue 6 for more details
@@ -170,9 +169,12 @@ class EpoxySimulation(Simulation):
     def calculate_curing_percentage(self, step):
         pass
 
+    @abstractmethod
+    def get_msd_groups(self):
+        pass
+
     def get_log_quantities(self):
-        log_quantities = ["volume", "momentum", "potential_energy",
-                "kinetic_energy","temperature", "pressure"]
+        log_quantities = ["volume", "momentum", "potential_energy", "kinetic_energy", "temperature", "pressure"]
         return log_quantities
 
     def configure_outputs(self):
@@ -183,20 +185,21 @@ class EpoxySimulation(Simulation):
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'start.hoomdxml'), all=True)
-        quantities=self.get_log_quantities()
+        quantities = self.get_log_quantities()
         if self.dybond_updater is not None:
             quantities.append("bond_percent(A-B)")
             #quantities.append("avg_num_failed_bonds")
             #quantities.append("avg_num_neighbors")
 
-        print('quantitites being logged:',quantities)
+        print('quantities being logged:', quantities)
         hoomd.analyze.log(filename=os.path.join(self.output_dir, 'out.log'),
                           quantities=quantities, period=self.log_write,
                           header_prefix='#', overwrite=True)
         dump.dcd(filename=os.path.join(self.output_dir, 'traj.dcd'), period=self.dcd_write, overwrite=True)
         dump.gsd(filename=os.path.join(self.output_dir, 'data.gsd'), period=self.dcd_write, group=hoomd.group.all(),
                  overwrite=True, static=['attribute'])
-        deprecated.analyze.msd(groups=self.msd_groups, period=self.log_write, overwrite=True,
+        msd_groups = self.get_msd_groups()
+        deprecated.analyze.msd(groups=msd_groups, period=self.log_write, overwrite=True,
                                filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
         self.silent_remove(os.path.join(self.output_dir, self.bond_rank_hist_file))
 
@@ -256,6 +259,9 @@ class EpoxySimulation(Simulation):
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'final.hoomdxml'), all=True)
+    @abstractmethod
+    def set_initial_structure(self):
+        pass
 
     def initialize(self):
         print('Initializing {}'.format(self.simulation_name))

@@ -7,6 +7,8 @@ from hoomd import md
 from hoomd import deprecated
 from hoomd import variant
 import mbuild as mb
+import epoxpy.common as cmn
+
 
 class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
     """Simulations class for ABCTypeEpoxySimulation where LJ is used as the
@@ -50,6 +52,11 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["bond_harmonic_energy"]
         return log_quantities
+
+    def get_non_bonded_neighbourlist(self):
+        nl = md.nlist.tree()  # cell()
+        nl.reset_exclusions(exclusions=['bond']);
+        return nl
 
     def set_initial_structure(self):
         print('========INITIAIZING FOR LJ==========')
@@ -108,10 +115,10 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
             self.system.restore_snapshot(snapshot)
 
         if self.shrink is True:
-            super().setup_mixing_run()
-            self.setup_forcefields()
+            self.nl = self.get_non_bonded_neighbourlist()
+            self.setup_force_fields()
             size_variant =\
-            variant.linear_interp([(0,self.system.box.Lx),(self.shrink_time,desired_box_dim)])
+            variant.linear_interp([(0,self.system.box.Lx), (self.shrink_time,desired_box_dim)])
             md.integrate.mode_standard(dt=self.mix_dt)
             md.integrate.langevin(group=hoomd.group.all(),
                                   kT=self.shrinkT,
@@ -127,54 +134,45 @@ class ABCTypeEpoxyLangevinHarmonicSimulation(ABCTypeEpoxySimulation):
         elif self.init_file_name.endswith('.gsd'):
             hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
-    def setup_forcefields(self):
+    def setup_force_fields(self):
         if self.DEBUG:
             print('=============force fields parameters==============')
-            print('self.CC_bond_const',self.CC_bond_const)
-            print('self.CC_bond_dist',self.CC_bond_dist)
-            print('self.AB_bond_const',self.AB_bond_const)
-            print('self.AB_bond_dist',self.AB_bond_dist)
-            print('self.AA_interaction',self.AA_interaction)
-            print('self.AB_interaction',self.AB_interaction)
-            print('self.AC_interaction',self.AC_interaction)
-            print('self.BC_interaction',self.BC_interaction)
-            print('self.gamma',self.gamma)
+            print('self.CC_bond_const', self.CC_bond_const)
+            print('self.CC_bond_dist', self.CC_bond_dist)
+            print('self.AB_bond_const', self.AB_bond_const)
+            print('self.AB_bond_dist', self.AB_bond_dist)
+            print('self.AA_interaction', self.AA_interaction)
+            print('self.AB_interaction', self.AB_interaction)
+            print('self.AC_interaction', self.AC_interaction)
+            print('self.BC_interaction', self.BC_interaction)
+            print('self.gamma', self.gamma)
         if self.num_b > 0 and self.num_c10 > 0:
             harmonic = md.bond.harmonic()
             harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
             harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
         lj = md.pair.lj(r_cut=2.5, nlist=self.nl)
-        lj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0 , alpha=self.AA_alpha)
-        lj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0 , alpha=self.AA_alpha)
-        lj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0 , alpha=self.AA_alpha)
+        lj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0, alpha=self.AA_alpha)
+        lj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0, alpha=self.AA_alpha)
+        lj.pair_coeff.set('C', 'C', epsilon=self.AA_interaction, sigma=1.0, alpha=self.AA_alpha)
 
-        lj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0 , alpha=self.AB_alpha)
-        lj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0 , alpha=self.AC_alpha)
-        lj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0 , alpha=self.BC_alpha)
+        lj.pair_coeff.set('A', 'B', epsilon=self.AB_interaction, sigma=1.0, alpha=self.AB_alpha)
+        lj.pair_coeff.set('A', 'C', epsilon=self.AC_interaction, sigma=1.0, alpha=self.AC_alpha)
+        lj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0, alpha=self.BC_alpha)
 
-    def setup_mixing_run(self):
-        # Mix Step/MD Setup
-        super().setup_mixing_run()
-        self.nl.reset_exclusions(exclusions = ['bond']);
-        self.setup_forcefields()
-        bd=md.integrate.langevin(group=hoomd.group.all(),
-                        kT=self.mix_kT,
-                        seed=1223445,noiseless_t=False, noiseless_r=False)
-        bd.set_gamma('A', gamma=self.gamma)
-        bd.set_gamma('B', gamma=self.gamma)
-        bd.set_gamma('C', gamma=self.gamma)
-
-    def setup_md_run(self):
-        super().setup_md_run()
-        self.nl.reset_exclusions(exclusions = ['bond']);
-        profile = self.temp_prof.get_profile()
-        print('temperature profile {}'.format(profile.points))
-        self.setup_forcefields()
-        print('===========================md_dt=====================',self.md_dt)
+    def setup_integrator(self, stage):
+        if stage == cmn.Stages.MIXING:
+            temperature = self.mix_kT
+            print('========= MIXING TEMPERATURE:',temperature,'=============')
+        elif stage == cmn.Stages.CURING:
+            profile = self.temp_prof.get_profile()
+            temperature = profile
+            print('========= CURING TEMPERATURE:',temperature,'=============')
         md.integrate.mode_standard(dt=self.md_dt)
-        bd=md.integrate.langevin(group=hoomd.group.all(),
-                        kT=profile,
-                        seed=1223445,noiseless_t=False, noiseless_r=False)
-        bd.set_gamma('A', gamma=self.gamma)
-        bd.set_gamma('B', gamma=self.gamma)
-        bd.set_gamma('C', gamma=self.gamma)
+        integrator = md.integrate.langevin(group=hoomd.group.all(),
+                                           kT=temperature,
+                                           seed=1223445,
+                                           noiseless_t=False,
+                                           noiseless_r=False)
+        integrator.set_gamma('A', gamma=self.gamma)
+        integrator.set_gamma('B', gamma=self.gamma)
+        integrator.set_gamma('C', gamma=self.gamma)
