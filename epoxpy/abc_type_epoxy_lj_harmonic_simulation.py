@@ -165,7 +165,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         lj.pair_coeff.set('B', 'C', epsilon=self.BC_interaction, sigma=1.0, alpha=self.BC_alpha)
 
     def setup_integrator(self, stage):
-        print('=============Setting up {} integrator for {}: {}'.format(self.integrator.name, stage.name))
+        print('=============Setting up {} integrator for {}'.format(self.integrator.name, stage.name))
         if stage == cmn.Stages.MIXING:
             temperature = self.mix_kT
             dt = self.mix_dt
