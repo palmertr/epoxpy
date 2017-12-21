@@ -31,7 +31,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                  tau=0.1,
                  tauP=0.2,
                  P=1.0,
-                 integrator=cmn.Integrators.LANGEVIN,
+                 integrator=cmn.Integrators.LANGEVIN.name,
                  *args,
                  **kwargs):
         ABCTypeEpoxySimulation.__init__(self,
@@ -69,8 +69,11 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         print('========INITIAIZING FOR LJ==========')
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
-        self.box = [desired_box_dim, desired_box_dim,
-                    desired_box_dim]
+        maxs = [desired_box_dim/2, desired_box_dim/2,desired_box_dim/2]
+        mins = [-desired_box_dim/2, -desired_box_dim/2,-desired_box_dim/2]
+        #self.box = [desired_box_dim, desired_box_dim,
+        #            desired_box_dim]
+        self.box = mb.Box(mins=mins,maxs=maxs)
         if self.old_init == True:
             print("\n\n ===USING OLD INIT=== \n\n")
             As = my_init.Bead(btype="A", mass=A.mass)
@@ -82,23 +85,20 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
             self.system = hoomd.init.read_snapshot(snap)
         else:
             if self.shrink is True:
-                print('Packing {} A particles ..'.format(self.num_a))
-                mix_box = mb.packing.fill_box(A(), self.num_a,
+                print('Packing {} A particles, {} B particles and {} C10s ..'.format(self.num_a,
+                                                                                     self.num_b,
+                                                                                     self.num_c10))
+                mix_box = mb.packing.fill_box([A(), B(), C10()],
+                                              [self.num_a, self.num_b, self.num_c10],
                                               box=self.box)#,overlap=0.5)
-                mix_box = mb.packing.solvate(mix_box, B(), self.num_b,
-                                             box=self.box)#,overlap=0.5)
-                print('Packing {} B particles ..'.format(self.num_b))
-                mix_box = mb.packing.solvate(mix_box, C10(), self.num_c10,
-                                             box=self.box)#,overlap=0.5)
-                print('Packing {} C10 particles ..'.format(self.num_c10))
             else:
                 blend = Epoxy_A_10_B_20_C10_2_Blend()
                 mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
 
             if self.init_file_name.endswith('.hoomdxml'):
-                mix_box.save(self.init_file_name)
+                mix_box.save(self.init_file_name, overwrite=True)
             elif self.init_file_name.endswith('.gsd'):
-                mix_box.save(self.init_file_name, write_ff=False)
+                mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
 
             if self.init_file_name.endswith('.hoomdxml'):
                 self.system = hoomd.deprecated.init.read_xml(self.init_file_name)

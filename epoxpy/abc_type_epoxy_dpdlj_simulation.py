@@ -75,23 +75,20 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
             self.system = hoomd.init.read_snapshot(snap)
         else:
             if self.shrink is True:
-                print('Packing {} A particles ..'.format(self.num_a))
-                mix_box = mb.packing.fill_box(A(), self.num_a,
-                                              box=self.box)#,overlap=0.5)
-                mix_box = mb.packing.solvate(mix_box, B(), self.num_b,
-                                             box=self.box)#,overlap=0.5)
-                print('Packing {} B particles ..'.format(self.num_b))
-                mix_box = mb.packing.solvate(mix_box, C10(), self.num_c10,
-                                             box=self.box)#,overlap=0.5)
-                print('Packing {} C10 particles ..'.format(self.num_c10))
+                print('Packing {} A particles, {} B particles and {} C10s ..'.format(self.num_a,
+                                                                                     self.num_b,
+                                                                                     self.num_c10))
+                mix_box = mb.packing.fill_box([A(), B(), C10()],
+                                              [self.num_a, self.num_b, self.num_c10],
+                                              box=self.box)  # ,overlap=0.5)
             else:
                 blend = Epoxy_A_10_B_20_C10_2_Blend()
                 mix_box = mb.packing.fill_box(blend, self.n_mul, box=self.box, overlap=0.050)
 
             if self.init_file_name.endswith('.hoomdxml'):
-                mix_box.save(self.init_file_name)
+                mix_box.save(self.init_file_name, overwrite=True)
             elif self.init_file_name.endswith('.gsd'):
-                mix_box.save(self.init_file_name, write_ff=False)
+                mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
 
             if self.init_file_name.endswith('.hoomdxml'):
                 self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
