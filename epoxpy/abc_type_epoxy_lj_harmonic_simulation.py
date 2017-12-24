@@ -31,7 +31,7 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                  tau=0.1,
                  tauP=0.2,
                  P=1.0,
-                 integrator=cmn.Integrators.LANGEVIN,
+                 integrator=cmn.Integrators.LANGEVIN.name,
                  *args,
                  **kwargs):
         ABCTypeEpoxySimulation.__init__(self,
