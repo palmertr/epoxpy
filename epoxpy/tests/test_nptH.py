@@ -28,7 +28,7 @@ myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mi
                                        mix_dt=1e-4,
                                        md_dt=1e-2,
                                        output_dir=out_dir,
-                                       integrator=cmn.Integrators.NPT,
+                                       integrator=cmn.Integrators.NPT.name,
                                        use_dybond_plugin=True)
 
 myEpoxySim.execute()

@@ -6,7 +6,7 @@ from hoomd import md
 from hoomd import deprecated
 import os
 import numpy as np
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import Counter
 import epoxpy.common as cmn
 
@@ -120,6 +120,10 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
     def setup_integrator(self, stage):
         pass
 
+    @abstractmethod
+    def exclude_bonds_from_nlist(self):
+        pass
+
     def setup_mixing_run(self):
         # Mix Step/MD Setup
         print('==============Setting up MIXING run=================')
@@ -148,6 +152,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         if self.bond is True:
             if self.use_dybond_plugin is True:
                 self.dybond_updater = db.update.dybond(self.nl, group=hoomd.group.all(), period=self.bond_period)
+                print('#######################{}##########################'.format(type(self.exclude_bonds_from_nlist())))
                 self.dybond_updater.set_params(bond_type='A-B',A='A',
                                                A_fun_groups=ABCTypeEpoxySimulation.MAX_A_BONDS,B='B',
                                                B_fun_groups=ABCTypeEpoxySimulation.MAX_B_BONDS,
@@ -155,7 +160,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                                                rcut=self.bond_radius,alpha=self.sec_bond_weight,
                                                percent_bonds_per_step=self.percent_bonds_per_step,
                                                stop_after_percent=self.stop_after_percent,
-                                               callback=self.print_curing_and_stop_updater)
+                                               callback=self.print_curing_and_stop_updater,
+                                               exclude_from_nlist=self.exclude_bonds_from_nlist())
 
                 if self.stop_bonding_after is not None:
                     self.stop_dybond_updater_callback = hoomd.analyze.callback(callback=self.stop_dybond_updater,

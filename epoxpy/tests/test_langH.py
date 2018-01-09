@@ -1,6 +1,7 @@
 import epoxpy.abc_type_epoxy_lj_harmonic_simulation as es
 import epoxpy.temperature_profile_builder as tpb
 import epoxpy.bonding as bondClass
+import epoxpy.common as cmn
 import random
 import os
 import gsd.hoomd
@@ -25,6 +26,7 @@ myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mi
                                        shrink_time=1e4,
                                        mix_dt=1e-4,
                                        md_dt=1e-2,
+                                       integrator=cmn.Integrators.LANGEVIN.name,
                                        output_dir=out_dir,
                                        use_dybond_plugin=True)
 

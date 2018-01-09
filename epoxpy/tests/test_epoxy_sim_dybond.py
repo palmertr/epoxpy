@@ -106,7 +106,7 @@ class TestDyBondBonding(BaseTest):
                                                shrink_time=1e4,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
-                                               integrator=cmn.Integrators.LANGEVIN,
+                                               integrator=cmn.Integrators.LANGEVIN.name,
                                                output_dir=out_dir,
                                                use_dybond_plugin=True)
 
@@ -172,7 +172,7 @@ class TestDyBondBonding(BaseTest):
                                                shrink_time=1e4,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
-                                               integrator=cmn.Integrators.NPT,
+                                               integrator=cmn.Integrators.NPT.name,
                                                output_dir=out_dir,
                                                use_dybond_plugin=True)
 
