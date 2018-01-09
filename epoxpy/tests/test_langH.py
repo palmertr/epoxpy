@@ -22,8 +22,8 @@ sim_name = 'shrunk_freud_bonding'
 out_dir = os.path.join(out_dir, sim_name)
 myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                        temp_prof=type_A_md_temp_profile,
-                                       bond=True, n_mul=4.0, shrink=True,
-                                       shrink_time=1e4,
+                                       bond=True, n_mul=6.0, shrink=True,
+                                       shrink_time=1e5,
                                        mix_dt=1e-4,
                                        md_dt=1e-2,
                                        integrator=cmn.Integrators.LANGEVIN.name,
