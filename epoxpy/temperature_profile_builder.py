@@ -33,8 +33,9 @@ class TemperatureProfileBuilder(object):
         return fig
 
     def get_total_sim_time(self):
+        first_state_point = self.temperature_profile[0]
         last_state_point = self.temperature_profile[-1]
-        return last_state_point[0]
+        return last_state_point[0]-first_state_point[0]
 
     def get_raw(self):
         return self.temperature_profile

@@ -39,12 +39,13 @@ class ResumeABCTypeEpoxySimulation(ABCTypeEpoxySimulation):
         self.configure_outputs()
         if self.bond is True:
             log = hoomd.analyze.log(filename=None, quantities=["temperature"], period=self.bond_period)
+            msd_groups = self.get_msd_groups()
             if self.legacy_bonding is True:
-                self.bonding = LegacyBonding(system=self.system, groups=self.msd_groups, log=log,
+                self.bonding = LegacyBonding(system=self.system, groups=msd_groups, log=log,
                                                  activation_energy=self.activation_energy,
                                              sec_bond_weight=self.sec_bond_weight)
             else:
-                self.bonding = FreudBonding(system=self.system, groups=self.msd_groups, log=log,
+                self.bonding = FreudBonding(system=self.system, groups=msd_groups, log=log,
                                                 activation_energy=self.activation_energy,
                                             sec_bond_weight=self.sec_bond_weight)
             bond_callback = hoomd.analyze.callback(callback=self.bonding, period=self.bond_period)

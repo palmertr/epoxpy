@@ -26,6 +26,9 @@ Conda version 4.3 or greater is supported.
 conda create --name epoxpy python=3.5
 source activate epoxpy
 conda install -c cmelab -c glotzer -c mosdef -c omnia epoxpy
+#This package requires hoomd. 
+#But its up to the user to use the below version from conda or build from source((https://bitbucket.org/cmelab/hoomd_blue)
+conda install -c cmelab hoomd_dybond
 ```
 #### Sample script
 ```

@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class Simulation(object):
+class Simulation(object, metaclass=ABCMeta):
     """Common base class for all simulations."""
     __metaclass__ = ABCMeta
 
