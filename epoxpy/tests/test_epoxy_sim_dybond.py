@@ -102,11 +102,11 @@ class TestDyBondBonding(BaseTest):
         out_dir = os.path.join(out_dir, sim_name)
         myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile,
-                                               bond=True, n_mul=4.0, shrink=True,
-                                               shrink_time=1e4,
+                                               bond=True, n_mul=6.0, shrink=True,
+                                               shrink_time=1e5,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
-                                               integrator=cmn.Integrators.LANGEVIN,
+                                               integrator=cmn.Integrators.LANGEVIN.name,
                                                output_dir=out_dir,
                                                use_dybond_plugin=True)
 
@@ -119,7 +119,7 @@ class TestDyBondBonding(BaseTest):
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
         current_bonds = snapshot.bonds.N
-        assert snapshot.particles.N == 200
+        assert snapshot.particles.N == 300
         print('test_epoxy_sim_freud_shrunk_regression. current:{}'.format(current_bonds))
         assert current_bonds > 30 #Just checking if some bonds are being made
 
@@ -168,11 +168,11 @@ class TestDyBondBonding(BaseTest):
         out_dir = os.path.join(out_dir, sim_name)
         myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile,
-                                               bond=True, n_mul=4.0, shrink=True,
-                                               shrink_time=1e4,
+                                               bond=True, n_mul=6.0, shrink=True,
+                                               shrink_time=1e5,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
-                                               integrator=cmn.Integrators.NPT,
+                                               integrator=cmn.Integrators.NPT.name,
                                                output_dir=out_dir,
                                                use_dybond_plugin=True)
 
@@ -185,7 +185,7 @@ class TestDyBondBonding(BaseTest):
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
         current_bonds = snapshot.bonds.N
-        assert snapshot.particles.N == 200
+        assert snapshot.particles.N == 300
         print('test_epoxy_sim_freud_shrunk_regression. current:{}'.format(current_bonds))
         assert current_bonds > 30 #Just checking if some bonds are being made
 
@@ -233,8 +233,8 @@ class TestDyBondBonding(BaseTest):
         out_dir = os.path.join(out_dir, sim_name)
         myEpoxySim = es.ABCTypeEpoxyDPDLJSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile,
-                                               bond=True, n_mul=4.0, shrink=True,
-                                               shrink_time=1e4,
+                                               bond=True, n_mul=6.0, shrink=True,
+                                               shrink_time=1e5,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
                                                output_dir=out_dir,
@@ -249,7 +249,7 @@ class TestDyBondBonding(BaseTest):
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
         current_bonds = snapshot.bonds.N
-        assert snapshot.particles.N == 200
+        assert snapshot.particles.N == 300
         print('test_epoxy_sim_freud_shrunk_regression. current:{}'.format(current_bonds))
         assert current_bonds > 30 #Just checking if some bonds are being made
 
@@ -297,8 +297,8 @@ class TestDyBondBonding(BaseTest):
         out_dir = os.path.join(out_dir, sim_name)
         myEpoxySim = es.ABCTypeEpoxyDPDFENESimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile,
-                                               bond=True, n_mul=4.0, shrink=True,
-                                               shrink_time=1e4,
+                                               bond=True, n_mul=6.0, shrink=True,
+                                               shrink_time=1e5,
                                                mix_dt=1e-4,
                                                md_dt=1e-2,
                                                output_dir=out_dir,
@@ -313,7 +313,7 @@ class TestDyBondBonding(BaseTest):
         t = gsd.hoomd.HOOMDTrajectory(f)
         snapshot = t[-1]
         current_bonds = snapshot.bonds.N
-        assert snapshot.particles.N == 200
+        assert snapshot.particles.N == 300
         print('test_epoxy_sim_freud_shrunk_regression. current:{}'.format(current_bonds))
         assert current_bonds > 30 #Just checking if some bonds are being made
 

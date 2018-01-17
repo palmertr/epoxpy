@@ -55,6 +55,10 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         self.tau = tau
         self.tauP = tauP
         self.P = P
+        self._exclude_bonds_from_nlist = True
+
+    def exclude_bonds_from_nlist(self):
+        return self._exclude_bonds_from_nlist
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["pair_lj_energy", "bond_harmonic_energy"]

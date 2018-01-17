@@ -1,5 +1,5 @@
 {% set name = "epoxpy" %}
-{% set version = "2.0.2" %}
+{% set version = "2.0.3" %}
 
 package:
   name: {{ name }}
@@ -22,7 +22,6 @@ requirements:
     - matplotlib
     - numpy >=1.13.3
     - mbuild 0.6.1
-    - hoomd_dybond
     - freud
     - gsd
   run:
@@ -31,7 +30,6 @@ requirements:
     - matplotlib
     - numpy >=1.13.3
     - mbuild 0.6.1
-    - hoomd_dybond
     - freud
     - gsd
 test:

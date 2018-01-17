@@ -48,6 +48,10 @@ class ABCTypeEpoxyDPDLJSimulation(ABCTypeEpoxySimulation):
         self.BC_alpha = BC_alpha
         self.shrink_time = shrink_time
         self.shrinkT = shrinkT
+        self._exclude_bonds_from_nlist = False
+
+    def exclude_bonds_from_nlist(self):
+        return self._exclude_bonds_from_nlist
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["pair_dpdlj_energy","bond_harmonic_energy"]

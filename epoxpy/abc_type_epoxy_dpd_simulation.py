@@ -21,6 +21,7 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
                  AB_interaction=35.0,
                  AC_interaction=35.0,
                  BC_interaction=35.0,
+                 nlist=cmn.NeighbourList.CELL.name,
                  *args,
                  **kwargs):
         ABCTypeEpoxySimulation.__init__(self,
@@ -34,14 +35,22 @@ class ABCTypeEpoxyDPDSimulation(ABCTypeEpoxySimulation):
         self.AB_interaction = AB_interaction
         self.AC_interaction = AC_interaction
         self.BC_interaction = BC_interaction
+        self.nlist = cmn.NeighbourList[nlist]
         self.dpd = None
+        self._exclude_bonds_from_nlist = False
+
+    def exclude_bonds_from_nlist(self):
+        return self._exclude_bonds_from_nlist
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["pair_dpd_energy","bond_harmonic_energy"]
         return log_quantities
 
     def get_non_bonded_neighbourlist(self):
-        nl = md.nlist.tree()  # cell()
+        if self.nlist == cmn.NeighbourList.CELL:
+            nl = md.nlist.cell()
+        else:
+            nl = md.nlist.tree()
         nl.reset_exclusions(exclusions=[]);
         return nl
 
