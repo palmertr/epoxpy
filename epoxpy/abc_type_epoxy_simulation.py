@@ -1,5 +1,6 @@
 from epoxpy.epoxy_simulation import EpoxySimulation
 from epoxpy.bonding import LegacyBonding, FreudBonding
+from epoxpy.lib import A, B, C, C10
 import hoomd
 import hoomd.dybond_plugin as db
 from hoomd import md
@@ -9,6 +10,9 @@ import numpy as np
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import Counter
 import epoxpy.common as cmn
+from hoomd import variant
+import mbuild as mb
+import epoxpy.init as my_init
 
 
 class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
@@ -53,6 +57,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                  CC_bond_const=100,
                  AB_bond_dist=1,
                  CC_bond_dist=1,
+                 shrink_time=1e6,
+                 shrinkT=2.0,
                  *args,
                  **kwargs):
         EpoxySimulation.__init__(self,
@@ -76,6 +82,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         self.gamma = gamma
         self.stop_after_percent = stop_after_percent
         self.percent_bonds_per_step = percent_bonds_per_step
+        self.shrink_time = shrink_time
+        self.shrinkT = shrinkT
         print('kwargs passed into ABCTypeEpoxySimulation: {}'.format(kwargs))
         # setting developer variables through kwargs for testing.
         for key, value in kwargs.items():
@@ -107,6 +115,79 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         snapshot = self.system.take_snapshot(bonds=True)
         snapshot.bonds.types = ['C-C', 'A-B']
         self.system.restore_snapshot(snapshot)
+
+    def set_initial_structure(self):
+        print('========INITIAIZING STRUCTURE==========')
+        desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (C10.mass*self.num_c10)) / self.density
+        desired_box_dim = (desired_box_volume ** (1./3.))
+        reduced_density = self.density/10
+        ex_box_vol = ((A.mass * self.num_a) + (B.mass * self.num_b) + (C10.mass * self.num_c10)) / reduced_density
+        expanded_box_dim = (ex_box_vol ** (1. / 3.))
+        half_L = expanded_box_dim/2
+        box = mb.Box(mins=[-half_L, -half_L, -half_L], maxs=[half_L, half_L, half_L])
+        if self.old_init:
+            print("\n\n ===USING OLD INIT=== \n\n")
+            As = my_init.Bead(btype="A", mass=A.mass)
+            Bs = my_init.Bead(btype="B", mass=B.mass)
+            C10s = my_init.PolyBead(btype="C", mass=1.0, N=10)# Hardcode C10, with mon-mass 1.0
+            snap = my_init.init_system({As: int(self.num_a),
+                                        Bs: int(self.num_b),
+                                        C10s: int(self.num_c10)},
+                                       self.density/10)
+            self.system = hoomd.init.read_snapshot(snap)
+        else:
+            print("\n\n ===USING MBUILD INIT=== \n\n")
+            if self.shrink is False:
+                print('shrink=False is deprecated.')
+            print('Packing {} A particles, {} B particles and {} C10s ..'.format(self.num_a,
+                                                                                 self.num_b,
+                                                                                 self.num_c10))
+            mix_box = mb.packing.fill_box([A(), B(), C10()],
+                                          [self.num_a, self.num_b, self.num_c10],
+                                          box=box)  # ,overlap=0.5)
+
+            if self.init_file_name.endswith('.hoomdxml'):
+                mix_box.save(self.init_file_name, overwrite=True)
+            elif self.init_file_name.endswith('.gsd'):
+                mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
+
+            if self.init_file_name.endswith('.hoomdxml'):
+                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+            elif self.init_file_name.endswith('.gsd'):
+                self.system = hoomd.init.read_gsd(self.init_file_name)
+
+            print('Initial box dimension: {}'.format(self.system.box.dimensions))
+
+            snapshot = self.system.take_snapshot(bonds=True)
+            for p_id in range(snapshot.particles.N):
+                p_types = snapshot.particles.types
+                p_type = p_types[snapshot.particles.typeid[p_id]]
+                if p_type == 'A':
+                    snapshot.particles.mass[p_id] = A.mass
+                if p_type == 'B':
+                    snapshot.particles.mass[p_id] = B.mass
+                if p_type == 'C':
+                    snapshot.particles.mass[p_id] = C.mass
+            print(snapshot.bonds.types)
+            snapshot.bonds.types = ['C-C', 'A-B']
+            self.system.restore_snapshot(snapshot)
+
+        self.nl = self.get_non_bonded_neighbourlist()
+        self.setup_force_fields(stage=cmn.Stages.MIXING)
+        size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time, desired_box_dim)])
+        md.integrate.mode_standard(dt=self.mix_dt)
+        md.integrate.langevin(group=hoomd.group.all(),
+                              kT=self.shrinkT,
+                              seed=1223445)  # self.seed)
+        resize = hoomd.update.box_resize(L=size_variant)
+        hoomd.run(self.shrink_time)
+        snapshot = self.system.take_snapshot()
+        print('Initial box dimension: {}'.format(snapshot.box))
+
+        if self.init_file_name.endswith('.hoomdxml'):
+            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+        elif self.init_file_name.endswith('.gsd'):
+            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
 
     @abstractmethod
     def get_non_bonded_neighbourlist(self):

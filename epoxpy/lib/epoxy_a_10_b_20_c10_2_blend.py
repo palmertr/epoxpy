@@ -31,18 +31,18 @@ class Epoxy_A_10_B_20_C10_2_Blend(mb.Compound):
             x = random.uniform(-box[0] / 2, box[0] / 2)
             y = random.uniform(-box[1] / 2, box[1] / 2)
             z = random.uniform(-box[2] / 2, box[2] / 2)
-            mb.translate(self['A'][-1], [x, y, z])
+            mb.Compound.translate(self['A'][-1], [x, y, z])
 
         for index in range(0, num_b):
             self.add(B(), label='B[$]')
             x = random.uniform(-box[0] / 2, box[0] / 2)
             y = random.uniform(-box[1] / 2, box[1] / 2)
             z = random.uniform(-box[2] / 2, box[2] / 2)
-            mb.translate(self['B'][-1], [x, y, z])
+            mb.Compound.translate(self['B'][-1], [x, y, z])
 
         for index in range(0, num_c10):
             self.add(C10(), label='C10[$]')
             x = random.uniform(-box[0] / 2, box[0] / 2)
             y = random.uniform(-box[1] / 2, box[1] / 2)
             z = random.uniform(-box[2] / 2, box[2] / 2)
-            mb.translate(self['C10'][-1], [x, y, z])
+            mb.Compound.translate(self['C10'][-1], [x, y, z])

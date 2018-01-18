@@ -41,6 +41,7 @@ class TestDyBondBonding(BaseTest):
         myEpoxySim = es.ABCTypeEpoxyDPDSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
                                                temp_prof=type_A_md_temp_profile,
                                                bond=True, n_mul=2.0, shrink=True,
+                                               shrink_time=1e2,
                                                output_dir=out_dir,
                                                use_dybond_plugin=True)
 

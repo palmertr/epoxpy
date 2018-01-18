@@ -11,7 +11,7 @@ class B(mb.Compound):
         self.add(mb.Particle(name='B'))
 
         self.add(mb.Port(anchor=self[0]), 'up')
-        mb.translate(self['up'], [0, 0.07, 0])
+        mb.Compound.translate(self['up'], [0, 0.07, 0])
 
         self.add(mb.Port(anchor=self[0]), 'down')
-        mb.translate(self['down'], [0, -0.07, 0])
+        mb.Compound.translate(self['down'], [0, -0.07, 0])

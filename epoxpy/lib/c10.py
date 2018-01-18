@@ -1,6 +1,7 @@
 import random
 import math
 import mbuild as mb
+import numpy as np
 from epoxpy.lib import C
 
 
@@ -31,12 +32,16 @@ class C10(mb.Compound):
             self.add(C(), label='C[$]')
 
         if c1_pos is not None:
-            mb.translate(self['C'][0], c1_pos)
+            mb.Compound.translate(self['C'][0], c1_pos)
 
         if rotate_random is True:
-            mb.rotate_around_x(self['C'][0], random.uniform(0, 2*math.pi))
-            mb.rotate_around_y(self['C'][0], random.uniform(0, 2 * math.pi))
-            mb.rotate_around_z(self['C'][0], random.uniform(0, 2 * math.pi))
+            mb.Compound.rotate(self['C'][0], random.uniform(0, 2*math.pi), around=np.asarray([1, 0, 0]))
+            mb.Compound.rotate(self['C'][0], random.uniform(0, 2*math.pi), around=np.asarray([0, 1, 0]))
+            mb.Compound.rotate(self['C'][0], random.uniform(0, 2*math.pi), around=np.asarray([0, 0, 1]))
+
+            #mb.rotate_around_x(self['C'][0], random.uniform(0, 2*math.pi))
+            #mb.rotate_around_y(self['C'][0], random.uniform(0, 2 * math.pi))
+            #mb.rotate_around_z(self['C'][0], random.uniform(0, 2 * math.pi))
 
         for index in range(num_particles - 1):
             mb.force_overlap(move_this=self['C'][index + 1],

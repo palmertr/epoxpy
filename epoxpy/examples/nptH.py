@@ -7,7 +7,6 @@ import gsd.hoomd
 import numpy as np
 import epoxpy.common as cmn
 
-
 random.seed(1020)
 
 mix_time = 1e3
@@ -19,17 +18,17 @@ type_A_md_temp_profile = tpb.LinearTemperatureProfileBuilder(initial_temperature
 type_A_md_temp_profile.add_state_point(500 * time_scale, cure_kt)
 
 out_dir = str('.')
-sim_name = 'shrunk_freud_bonding'
+sim_name = 'nptH'
 out_dir = os.path.join(out_dir, sim_name)
 myEpoxySim = es.ABCTypeEpoxyLJHarmonicSimulation(sim_name, mix_time=mix_time, mix_kt=mix_kt,
-                                       temp_prof=type_A_md_temp_profile,
-                                       bond=True, n_mul=4.0, shrink=True,
-                                       shrink_time=1e4,
-                                       mix_dt=1e-4,
-                                       md_dt=1e-2,
-                                       output_dir=out_dir,
-                                       integrator=cmn.Integrators.NPT.name,
-                                       use_dybond_plugin=True)
+                                                 temp_prof=type_A_md_temp_profile,
+                                                 bond=True, n_mul=6.0, shrink=True,
+                                                 shrink_time=1e5,
+                                                 mix_dt=1e-4,
+                                                 md_dt=1e-2,
+                                                 integrator=cmn.Integrators.NPT.name,
+                                                 output_dir=out_dir,
+                                                 use_dybond_plugin=True)
 
 myEpoxySim.execute()
 
