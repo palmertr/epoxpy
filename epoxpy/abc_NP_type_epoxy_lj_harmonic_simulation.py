@@ -1,6 +1,6 @@
 from epoxpy.abc_type_epoxy_simulation import ABCTypeEpoxySimulation
 import hoomd
-import mbuild as mb 
+import mbuild as mb
 from epoxpy.lib import A, B, C10, Sphere
 from hoomd import md
 import epoxpy.common as cmn
@@ -23,7 +23,7 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                  AB_alpha=0.0,
                  AC_alpha=0.0,
                  BC_alpha=0.0,
-                 num_spheres=10, 
+                 num_spheres=10,
                  tau=0.1,
                  tauP=0.2,
                  P=1.0,
@@ -63,8 +63,8 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         nl = md.nlist.tree()  # cell()
         nl.reset_exclusions(exclusions=['bond']);
         return nl
-    
-    
+
+
     def set_initial_structure(self):
         print('========INITIAIZING STRUCTURE==========')
         num_beads_in_sphere = 65
@@ -87,14 +87,17 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                                                                                  self.num_b,
                                                                                  self.num_c10,
                                                                                  self.num_spheres))
-            
-             
+
+
             mix_box = mb.packing.fill_box([A(), B(), C10(), Sphere(n=num_beads_in_sphere)],
                                           [self.num_a, self.num_b, self.num_c10, self.num_spheres],
-                                          box=box)  # ,overlap=0.5)
-            if self.num_spheres > 0: 
+                                          box=box, fix_orientation=[False,
+                                                                    False,
+                                                                    False,
+                                                                    True])  # ,overlap=0.5)
+            if self.num_spheres > 0:
                 mix_box.label_rigid_bodies(discrete_bodies = 'Sphere')
-           
+
 
             print("\n\n ==== Box Mixed ===== \n\n")
             print(mix_box)
@@ -152,9 +155,9 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
             dt = self.md_dt
             print('========= CURING TEMPERATURE:', temperature, '=============')
         md.integrate.mode_standard(dt=dt)
-        
-        rigid = hoomd.group.type(name = 'rigid', type='rc') 
-        
+
+        rigid = hoomd.group.type(name = 'rigid', type='rc')
+
         if self.integrator == cmn.Integrators.LANGEVIN:
             integrator = md.integrate.langevin(group=rigid,
                                                kT=temperature,
