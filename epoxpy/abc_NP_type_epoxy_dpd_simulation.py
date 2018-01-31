@@ -46,6 +46,7 @@ class ABCNPTypeEpoxyDPDSimulation(ABCTypeEpoxyDPDSimulation):
         print('========INITIAIZING STRUCTURE==========')
         num_beads_in_sphere = 65
         Sphere.mass = num_beads_in_sphere
+        Sphere.name = 'Sphere'
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (Sphere.mass*self.num_spheres)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
         reduced_density = self.density/10
@@ -62,9 +63,13 @@ class ABCNPTypeEpoxyDPDSimulation(ABCTypeEpoxyDPDSimulation):
             print('Packing {} A particles, {} B particles and {} C65s ..'.format(self.num_a,
                                                                                  self.num_b,
                                                                                  self.num_spheres))
+            
+            
             mix_box = mb.packing.fill_box([A(), B(), Sphere(n=num_beads_in_sphere)],
                                           [self.num_a, self.num_b, self.num_spheres],
                                           box=box)  # ,overlap=0.5)
+            if self.num_spheres > 0: 
+                mix_box.label_rigid_bodies(discrete_bodies = 'Sphere')
 
             if self.init_file_name.endswith('.hoomdxml'):
                 mix_box.save(self.init_file_name, overwrite=True)
@@ -78,33 +83,41 @@ class ABCNPTypeEpoxyDPDSimulation(ABCTypeEpoxyDPDSimulation):
 
             print('Initial box dimension: {}'.format(self.system.box.dimensions))
 
-            snapshot = self.system.take_snapshot(bonds=True)
-            for p_id in range(snapshot.particles.N):
-                p_types = snapshot.particles.types
-                p_type = p_types[snapshot.particles.typeid[p_id]]
-                if p_type == 'A':
-                    snapshot.particles.mass[p_id] = A.mass
-                if p_type == 'B':
-                    snapshot.particles.mass[p_id] = B.mass
-                if p_type == 'C':
-                    snapshot.particles.mass[p_id] = C.mass
-            print(snapshot.bonds.types)
-            snapshot.bonds.types = ['C-C', 'A-B']
-            self.system.restore_snapshot(snapshot)
 
-        self.nl = self.get_non_bonded_neighbourlist()
-        self.setup_force_fields(stage=cmn.Stages.MIXING)
-        size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time, desired_box_dim)])
-        md.integrate.mode_standard(dt=self.mix_dt)
-        md.integrate.langevin(group=hoomd.group.all(),
-                              kT=self.shrinkT,
-                              seed=1223445)  # self.seed)
-        resize = hoomd.update.box_resize(L=size_variant)
-        hoomd.run(self.shrink_time)
-        snapshot = self.system.take_snapshot()
-        print('Initial box dimension: {}'.format(snapshot.box))
 
-        if self.init_file_name.endswith('.hoomdxml'):
-            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-        elif self.init_file_name.endswith('.gsd'):
-            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+
+
+
+
+
+
+#            snapshot = self.system.take_snapshot(bonds=True)
+#            for p_id in range(snapshot.particles.N):
+#                p_types = snapshot.particles.types
+#                p_type = p_types[snapshot.particles.typeid[p_id]]
+#                if p_type == 'A':
+#                    snapshot.particles.mass[p_id] = A.mass
+#                if p_type == 'B':
+#                    snapshot.particles.mass[p_id] = B.mass
+#                if p_type == 'C':
+#                    snapshot.particles.mass[p_id] = C.mass
+#            print(snapshot.bonds.types)
+#            snapshot.bonds.types = ['C-C', 'A-B']
+#            self.system.restore_snapshot(snapshot)
+#
+#        self.nl = self.get_non_bonded_neighbourlist()
+#        self.setup_force_fields(stage=cmn.Stages.MIXING)
+#        size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time, desired_box_dim)])
+#        md.integrate.mode_standard(dt=self.mix_dt)
+#        md.integrate.langevin(group=hoomd.group.all(),
+#                              kT=self.shrinkT,
+#                              seed=1223445)  # self.seed)
+#        resize = hoomd.update.box_resize(L=size_variant)
+#        hoomd.run(self.shrink_time)
+#        snapshot = self.system.take_snapshot()
+#        print('Initial box dimension: {}'.format(snapshot.box))
+
+#        if self.init_file_name.endswith('.hoomdxml'):
+#            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+#        elif self.init_file_name.endswith('.gsd'):
+#            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
