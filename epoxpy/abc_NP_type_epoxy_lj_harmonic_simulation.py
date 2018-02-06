@@ -1,5 +1,6 @@
 from epoxpy.abc_type_epoxy_simulation import ABCTypeEpoxySimulation
 import hoomd
+import cme_utils
 import mbuild as mb 
 from epoxpy.lib import A, B, C10, Sphere
 from hoomd import md
@@ -105,7 +106,7 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                 mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
 
             if self.init_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+                self.system = cme_utils.manip.convert_rigid.init_wrapper(xmlfile=self.init_file_name)
             elif self.init_file_name.endswith('.gsd'):
                 self.system = hoomd.init.read_gsd(self.init_file_name)
 
@@ -153,7 +154,7 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
             print('========= CURING TEMPERATURE:', temperature, '=============')
         md.integrate.mode_standard(dt=dt)
         
-        rigid = hoomd.group.type(name = 'rigid', type='rc') 
+        rigid = hoomd.group.rigid_center()
         
         if self.integrator == cmn.Integrators.LANGEVIN:
             integrator = md.integrate.langevin(group=rigid,
