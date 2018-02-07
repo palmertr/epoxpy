@@ -8,6 +8,7 @@ import os
 from epoxpy.lib import A, B, C10, Sphere
 from hoomd import deprecated
 import cme_utils.manip.convert_rigid as init_rigid
+from hoomd import variant
 
 
 class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
@@ -19,14 +20,14 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                  mix_time,
                  mix_kt,
                  temp_prof,
-                 AA_interaction=10.0,
-                 AB_interaction=1.0,
-                 AC_interaction=1.0,
-                 BC_interaction=1.0,
+                 AA_interaction=1.0,
+                 AB_interaction=0.2,
+                 AC_interaction=0.2,
+                 BC_interaction=0.2,
                  AA_alpha=1.0,
-                 AB_alpha=0.0,
-                 AC_alpha=0.0,
-                 BC_alpha=0.0,
+                 AB_alpha=1.0,
+                 AC_alpha=1.0,
+                 BC_alpha=1.0,
                  num_spheres=10,
                  tau=0.1,
                  tauP=0.2,
@@ -55,6 +56,7 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         self.tauP = tauP
         self.P = P
         self._exclude_bonds_from_nlist = True
+        self._all_particle_types = None
 
     def exclude_bonds_from_nlist(self):
         return self._exclude_bonds_from_nlist
@@ -117,7 +119,7 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         Sphere.name = 'Sphere'
         desired_box_volume = ((A.mass*self.num_a) + (B.mass*self.num_b) + (Sphere.mass*self.num_spheres)) / self.density
         desired_box_dim = (desired_box_volume ** (1./3.))
-        reduced_density = self.density#/10
+        reduced_density = self.density/10
         ex_box_vol = ((A.mass * self.num_a) + (B.mass * self.num_b) + (Sphere.mass*self.num_spheres)) / reduced_density
         expanded_box_dim = (ex_box_vol ** (1. / 3.))
         half_L = expanded_box_dim/2
@@ -150,7 +152,30 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
                 system = hoomd.init.read_gsd(self.init_file_name)
 
             print('Initial box dimension: {}'.format(system.box.dimensions))
-            return system
+
+        self._all_particle_types = system.particles.types
+
+        self.nl = self.get_non_bonded_neighbourlist()
+        if self.nl is None:
+            raise Exception('Neighbourlist is not set')
+        self.setup_force_fields(stage=cmn.Stages.MIXING)
+        size_variant = variant.linear_interp([(0, system.box.Lx), (self.shrink_time, desired_box_dim)])
+        md.integrate.mode_standard(dt=self.mix_dt)
+        rigid = hoomd.group.rigid_center()
+        nonrigid = hoomd.group.nonrigid()
+        both_group = hoomd.group.union("both", rigid, nonrigid)
+        md.integrate.langevin(group=both_group,
+                              kT=self.shrinkT,
+                              seed=1223445)
+        #integrator.set_gamma('A', gamma=self.gamma)
+        #integrator.set_gamma('B', gamma=self.gamma)
+        #integrator.set_gamma('C', gamma=self.gamma)
+
+        resize = hoomd.update.box_resize(L=size_variant)
+        hoomd.run(self.shrink_time)
+        snapshot = system.take_snapshot()
+        print('Initial box dimension after shrink: {}'.format(snapshot.box))
+        return system
 
     def setup_force_fields(self, stage):
         if self.DEBUG:
@@ -183,9 +208,9 @@ class ABCNPTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
 
         # the list comprehension below is setting the interaction parameter for all the particles in the system and
         # '_R' (the rigid body centers) to be zero. As a caveat, don't create a particle type '_R'!
-        lj.pair_coeff.set(self.system.particles.types,
-                          [i for (i, v) in zip(self.system.particles.types,
-                                               [_.startswith("_R") for _ in self.system.particles.types]) if v],
+        lj.pair_coeff.set(self._all_particle_types,
+                          [i for (i, v) in zip(self._all_particle_types,
+                                               [_.startswith("_R") for _ in self._all_particle_types]) if v],
                           epsilon=0.0,
                           sigma=0.0,
                           r_cut=0)
