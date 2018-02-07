@@ -99,21 +99,26 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         msd_groups = [self.group_a, self.group_b, self.group_c]
         return msd_groups
 
-    def initialize_system_from_file(self, file_path, use_time_step_from_file=True):
+    def get_system_from_file(self, file_path, use_time_step_from_file):
         if use_time_step_from_file:
             time_step = None
         else:
             time_step = 0  # start simulation from start.
-
         if file_path.endswith('.hoomdxml'):
-            self.system = hoomd.deprecated.init.read_xml(file_path, time_step=time_step)
+            system = hoomd.deprecated.init.read_xml(file_path, time_step=time_step)
         elif file_path.endswith('.gsd'):
             raise ValueError('Reading the most recent frame from gsd file is not yet implemented!')
-            self.system = hoomd.init.read_gsd(file_path, frame=0, time_step=time_step)
+            system = hoomd.init.read_gsd(file_path, frame=0, time_step=time_step)
         else:
             raise ValueError('No such file as {} exist on disk!'.format(file_path))
+        return system
+
+    def initialize_system_from_file(self, file_path, use_time_step_from_file=True):
+        self.system = self.get_system_from_file(file_path, use_time_step_from_file)
+        if self.system is None:
+            raise ValueError('get_system_from_file did not return a valid system object!')
         snapshot = self.system.take_snapshot(bonds=True)
-        snapshot.bonds.types = ['C-C', 'A-B']
+        snapshot.bonds.types = ['C-C', 'A-B']  # this information is not stored in the hoomdxml. So need to add it in.
         self.system.restore_snapshot(snapshot)
 
     def set_initial_structure(self):
@@ -134,7 +139,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                                         Bs: int(self.num_b),
                                         C10s: int(self.num_c10)},
                                        self.density/10)
-            self.system = hoomd.init.read_snapshot(snap)
+            system = hoomd.init.read_snapshot(snap)
         else:
             print("\n\n ===USING MBUILD INIT=== \n\n")
             if self.shrink is False:
@@ -152,13 +157,13 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                 mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
 
             if self.init_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+                system = hoomd.deprecated.init.read_xml(self.init_file_name)
             elif self.init_file_name.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.init_file_name)
+                system = hoomd.init.read_gsd(self.init_file_name)
 
-            print('Initial box dimension: {}'.format(self.system.box.dimensions))
+            print('Initial box dimension: {}'.format(system.box.dimensions))
 
-            snapshot = self.system.take_snapshot(bonds=True)
+            snapshot = system.take_snapshot(bonds=True)
             for p_id in range(snapshot.particles.N):
                 p_types = snapshot.particles.types
                 p_type = p_types[snapshot.particles.typeid[p_id]]
@@ -170,24 +175,22 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                     snapshot.particles.mass[p_id] = C.mass
             print(snapshot.bonds.types)
             snapshot.bonds.types = ['C-C', 'A-B']
-            self.system.restore_snapshot(snapshot)
+            system.restore_snapshot(snapshot)
 
         self.nl = self.get_non_bonded_neighbourlist()
+        if self.nl is None:
+            raise Exception('Neighbourlist is not set')
         self.setup_force_fields(stage=cmn.Stages.MIXING)
-        size_variant = variant.linear_interp([(0, self.system.box.Lx), (self.shrink_time, desired_box_dim)])
+        size_variant = variant.linear_interp([(0, system.box.Lx), (self.shrink_time, desired_box_dim)])
         md.integrate.mode_standard(dt=self.mix_dt)
         md.integrate.langevin(group=hoomd.group.all(),
                               kT=self.shrinkT,
                               seed=1223445)  # self.seed)
         resize = hoomd.update.box_resize(L=size_variant)
         hoomd.run(self.shrink_time)
-        snapshot = self.system.take_snapshot()
+        snapshot = system.take_snapshot()
         print('Initial box dimension: {}'.format(snapshot.box))
-
-        if self.init_file_name.endswith('.hoomdxml'):
-            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-        elif self.init_file_name.endswith('.gsd'):
-            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+        return system
 
     @abstractmethod
     def get_non_bonded_neighbourlist(self):
@@ -204,6 +207,22 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
     @abstractmethod
     def exclude_bonds_from_nlist(self):
         pass
+
+    def finalize_stage(self, stage):
+        if stage == cmn.Stages.INIT:
+            if self.init_file_name.endswith('.hoomdxml'):
+                deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+            elif self.init_file_name.endswith('.gsd'):
+                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.init_file_name, overwrite=True, period=None)
+        elif stage == cmn.Stages.MIXING:
+            if self.mixed_file_name.endswith('.hoomdxml'):
+                deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
+            elif self.mixed_file_name.endswith('.gsd'):
+                hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
+        elif stage == cmn.Stages.CURING:
+            deprecated.dump.xml(group=hoomd.group.all(),
+                                filename=os.path.join(self.output_dir,'final.hoomdxml'),
+                                all=True)
 
     def setup_mixing_run(self):
         # Mix Step/MD Setup
@@ -228,6 +247,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
 
     def setup_md_run(self):
         self.nl = self.get_non_bonded_neighbourlist()
+        if self.nl is None:
+            raise Exception('Neighbourlist is not set')
         self.setup_force_fields(stage=cmn.Stages.CURING)
         self.setup_integrator(stage=cmn.Stages.CURING)
         if self.bond is True:

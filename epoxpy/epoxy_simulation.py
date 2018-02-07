@@ -8,6 +8,7 @@ from abc import ABCMeta, abstractmethod
 import numpy.random as rd
 import numpy as np
 import os, errno
+import epoxpy.common as cmn
 
 
 class EpoxySimulation(Simulation, metaclass=ABCMeta):
@@ -123,10 +124,6 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
         return self.simulation_name
 
     @abstractmethod
-    def set_initial_structure(self):
-        pass
-
-    @abstractmethod
     def initialize_system_from_file(self, init_file_path=None, use_time_step_from_file=True):
         pass
 
@@ -171,6 +168,10 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
     def get_msd_groups(self):
         pass
 
+    @abstractmethod
+    def finalize_stage(self, stage):
+        pass
+
     def get_log_quantities(self):
         log_quantities = ["volume", "momentum", "potential_energy", "kinetic_energy", "temperature", "pressure"]
         return log_quantities
@@ -178,8 +179,8 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
     def configure_outputs(self):
         print('Configuring outputs. output_dir: {}'.format(self.output_dir))
         print('log_write: {} dcd_write: {}'.format(self.log_write, self.dcd_write))
-        hoomd.meta.dump_metadata(filename=os.path.join(self.output_dir,
-                                                       'metadata.json'), indent=2)
+        #hoomd.meta.dump_metadata(filename=os.path.join(self.output_dir,
+        #                                               'metadata.json'), indent=2)
         deprecated.dump.xml(group=hoomd.group.all(),
                             filename=os.path.join(self.output_dir,
                                                   'start.hoomdxml'), all=True)
@@ -197,16 +198,14 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
         dump.gsd(filename=os.path.join(self.output_dir, 'data.gsd'), period=self.dcd_write, group=hoomd.group.all(),
                  overwrite=True, static=['attribute'])
         msd_groups = self.get_msd_groups()
-        deprecated.analyze.msd(groups=msd_groups, period=self.log_write, overwrite=True,
-                               filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
+        if msd_groups is not None:
+            print('#### WARNING: no msd groups specified. Skipping msd logging!')
+            deprecated.analyze.msd(groups=msd_groups, period=self.log_write, overwrite=True,
+                                   filename=os.path.join(self.output_dir, 'msd.log'), header_prefix='#')
         self.silent_remove(os.path.join(self.output_dir, self.bond_rank_hist_file))
 
     def run_mixing(self):
         hoomd.run(self.mix_time)
-        if self.mixed_file_name.endswith('.hoomdxml'):
-            deprecated.dump.xml(group=hoomd.group.all(), filename=self.mixed_file_name, all=True)
-        elif self.mixed_file_name.endswith('.gsd'):
-            hoomd.dump.gsd(group=hoomd.group.all(), filename=self.mixed_file_name, overwrite=True, period=None)
 
     @staticmethod
     def init_velocity(n, temp):
@@ -241,7 +240,6 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
             hoomd.run(int(self.md_time*0.1),profile=True)# run 10% of the simulation time to calculate performance
         if self.nl_tuning:
             print('-----------------Disabling bonding and starting neighbourlist tuning-------------------')
-            self.get_curing_percentage()
             if self.bond:
                 if self.use_dybond_plugin:
                     self.dybond_updater.disable()
@@ -254,11 +252,23 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
                          steps=5000,
                          set_max_check_period=False)
 
-        deprecated.dump.xml(group=hoomd.group.all(),
-                            filename=os.path.join(self.output_dir,
-                                                  'final.hoomdxml'), all=True)
     @abstractmethod
     def set_initial_structure(self):
+        """
+        Saves the initial structure to file. The file name to use is "self.init_file_name". 
+        Raises a value exception is this file is not found after this function call.
+        :return: 
+        """
+        pass
+
+    @abstractmethod
+    def get_system_from_file(self, file_path, use_time_step_from_file):
+        """
+        Reads in the input structure, initalizes the hoomd system object and returns it.
+        :param file_path: path to input file
+        :param use_time_step_from_file: Decides if the time step from the input file should be used or start from zero.
+        :return: hoomd system object
+        """
         pass
 
     def initialize(self):
@@ -267,23 +277,32 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
             print('Creating simulation folder: {}'.format(self.output_dir))
             os.makedirs(self.output_dir)
 
+        # STEP 1: SET INITIAL CONDITION
         self.initialize_context()
         if self.ext_init_struct_path is None:
-            self.set_initial_structure()
+            self.system = self.set_initial_structure()
+            if self.system is None:
+                raise ValueError("set_initial_structure did not return a system object as expected!")
         else:
             print('Loading external initial structure : ', self.ext_init_struct_path)
             self.initialize_system_from_file(self.ext_init_struct_path)
-            deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
+        self.finalize_stage(cmn.Stages.INIT)
+        if not os.path.isfile(self.init_file_name):
+            raise ValueError("finalize_stage did not save the init file ({}) as expected!".
+                             format(self.init_file_name))
 
-
+        # STEP 2: MIX
         del self.system  # needed for re initializing hoomd
         self.initialize_context()
+        # initialize_system_from_file will make sure that the human readable bond types are added to the system
         self.initialize_system_from_file(self.init_file_name)
-        deprecated.dump.xml(group=hoomd.group.all(), filename=self.init_file_name, all=True)
-
         self.setup_mixing_run()
         self.configure_outputs()
         self.run_mixing()
+        self.finalize_stage(cmn.Stages.MIXING)
+        if not os.path.isfile(self.mixed_file_name):
+            raise ValueError("finalize_stage did not save the mixed file ({}) as expected!".
+                             format(self.mixed_file_name))
 
     def run(self):
         del self.system
@@ -303,6 +322,7 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
                                                      period=self.curing_log_period, phase=-1)
         hoomd.util.quiet_status()
         self.run_md()
+        self.finalize_stage(cmn.Stages.CURING)
 
         if self.bond is True:
             if self.use_dybond_plugin is False:
@@ -310,6 +330,7 @@ class EpoxySimulation(Simulation, metaclass=ABCMeta):
                 if self.log_curing is True and self.use_dybond_plugin is False:
                     curing_callback.disable()
                 self.log_bond_temp.disable()
+
     def execute(self):
         print('Executing {}'.format(self.simulation_name))
         self.initialize()

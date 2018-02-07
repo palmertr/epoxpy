@@ -46,10 +46,10 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
         self.tau = tau
         self.tauP = tauP
         self.P = P
-    #    self._exclude_bonds_from_nlist = True
+        self._exclude_bonds_from_nlist = True
 
-    #def exclude_bonds_from_nlist(self):
-    #    return self._exclude_bonds_from_nlist
+    def exclude_bonds_from_nlist(self):
+        return self._exclude_bonds_from_nlist
 
     def get_log_quantities(self):
         log_quantities = super().get_log_quantities()+["pair_lj_energy", "bond_harmonic_energy"]
@@ -72,10 +72,10 @@ class ABCTypeEpoxyLJHarmonicSimulation(ABCTypeEpoxySimulation):
             print('self.AC_interaction', self.AC_interaction)
             print('self.BC_interaction', self.BC_interaction)
             print('self.gamma', self.gamma)
-        #if self.num_b > 0 and self.num_c10 > 0:
-        #    harmonic = md.bond.harmonic()
-        #    harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
-        #    harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
+        if self.num_b > 0 and self.num_c10 > 0:
+            harmonic = md.bond.harmonic()
+            harmonic.bond_coeff.set('C-C', k=self.CC_bond_const, r0=self.CC_bond_dist)
+            harmonic.bond_coeff.set('A-B', k=self.AB_bond_const, r0=self.AB_bond_dist)
         lj = md.pair.lj(r_cut=2.5, nlist=self.nl)
         lj.pair_coeff.set('A', 'A', epsilon=self.AA_interaction, sigma=1.0, alpha=self.AA_alpha)
         lj.pair_coeff.set('B', 'B', epsilon=self.AA_interaction, sigma=1.0, alpha=self.AA_alpha)

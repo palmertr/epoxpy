@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class Stages(Enum):
+    INIT = 0
     MIXING = 1
     CURING = 2
 

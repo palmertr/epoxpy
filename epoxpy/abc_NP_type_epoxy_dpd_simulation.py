@@ -77,12 +77,12 @@ class ABCNPTypeEpoxyDPDSimulation(ABCTypeEpoxyDPDSimulation):
                 mix_box.save(self.init_file_name, write_ff=False, overwrite=True)
 
             if self.init_file_name.endswith('.hoomdxml'):
-                self.system = hoomd.deprecated.init.read_xml(self.init_file_name)
+                system = hoomd.deprecated.init.read_xml(self.init_file_name)
             elif self.init_file_name.endswith('.gsd'):
-                self.system = hoomd.init.read_gsd(self.init_file_name)
+                system = hoomd.init.read_gsd(self.init_file_name)
 
             print('Initial box dimension: {}'.format(self.system.box.dimensions))
-
+            return system
 
 
 
