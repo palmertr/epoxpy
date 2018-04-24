@@ -1,11 +1,13 @@
 from numpy import pi, arctan2, arcsin
-
 import mbuild as mb
 
+    
 
 class Sphere(mb.Compound):
     """A spherical arangement of particles with Ports. """
-    def __init__(self, n=65, radius=1, port_distance_from_surface=.07):
+    
+    
+    def __init__(self, radius=1, port_distance_from_surface=.07):
         """Initialize a Sphere object.
 
         Args:
@@ -13,22 +15,29 @@ class Sphere(mb.Compound):
             radius (float): Radius of the Sphere.
             port_distance_from_surface (float): Distance of Ports from Sphere.
         """
+        
+        
         super(Sphere, self).__init__()
         #particle = mb.Particle(name='np')
         #particle.add(mb.Port(anchor=particle), label='out')
 
-        # Generate 65 points on the surface of a unit sphere.
+        #mbuild factor of 10
+        diameter = 20 * radius 
+        n = 4 * (diameter ** 2)
+        
+        # Generate n points on the surface of a unit sphere.
         pattern = mb.SpherePattern(n)
         # Magnify the unit sphere by the provided radius.
+        #mbuild_radius = radius / 10
         pattern.scale(radius)
-
+        
         #particles = pattern.apply(particle, orientation='normal', compound_port='out')
         #self.add(particles, label='np_[$]')
 
         # Create particles and Ports at pattern positions.
         for i, pos in enumerate(pattern.points):
             particle = mb.Particle(name="np", pos=pos)
-            self.add(particle, "np_{}".format(i))
+            self.add(particle, "np_{}".format(i + 1))
             port = mb.Port(anchor=particle)
             self.add(port, "port_{}".format(i))
         
@@ -41,6 +50,6 @@ class Sphere(mb.Compound):
             # Move the Port a bit away from the surface of the Sphere.
             port.translate(pos/radius * port_distance_from_surface)
 
-        #last_particle = len(pattern.points) + 1
-        #particle_center = mb.Particle(name='rc', pos = [0,0,0])
-        #self.add(particle_center, "np_{}".format(last_particle))
+        last_particle = len(pattern.points) + 1
+        particle_center = mb.Particle(name='rc', pos = [0,0,0])
+        self.add(particle_center, "np_{}".format(0))

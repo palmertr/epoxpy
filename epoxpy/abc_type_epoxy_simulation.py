@@ -17,7 +17,7 @@ import epoxpy.init as my_init
 
 class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
     MAX_A_BONDS=4
-    MAX_B_BONDS=2#This ratio is stoichiometric by default (see num_a and num_b defaults)
+    MAX_B_BONDS=4 #This ratio is stoichiometric by default (see num_a and num_b defaults)
     """Simulations class for setting initial condition and force field specific to the ABC coarse grained Epoxy blend.
           This simulation consists of three particle types (A, B and C). A, B and C particles are created in the
           ratio 10, 20 and 2 by default
@@ -46,8 +46,8 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                  mix_time,
                  mix_kt,
                  temp_prof,
-                 num_a=10,
-                 num_b=20,
+                 num_a=1,
+                 num_b=1,
                  num_c10=2,
                  n_mul=1.0,
                  gamma=4.5,
@@ -68,9 +68,9 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
                                  temp_prof,
                                  *args,
                                  **kwargs)
-        self.num_a = int(num_a * n_mul)
-        self.num_b = int(num_b * n_mul)
-        self.num_c10 = int(num_c10 * n_mul)
+        self.num_a = num_a
+        self.num_b = num_b
+        self.num_c10 = num_c10
         self.n_mul = n_mul
         self.group_a = None
         self.group_b = None
@@ -293,7 +293,7 @@ class ABCTypeEpoxySimulation(EpoxySimulation, metaclass=ABCMeta):
         n_bonds = 0
         if self.system is not None:
             snapshot = self.system.take_snapshot(bonds=True)
-            n_bonds = len(snapshot.bonds.group) - (self.num_c10 * 9)
+            n_bonds = len(snapshot.bonds.group)
         possible_bonds = self.total_possible_bonds()
         bond_percent = (n_bonds / possible_bonds) * 100.
         #print('possible bonds:{}, bonds made:{}, cure percent: {}'.format(possible_bonds, n_bonds, bond_percent))
